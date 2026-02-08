@@ -1,0 +1,93 @@
+services:
+  # Nginx Web Server
+  autofix_nginx:
+    image: nginx:alpine
+    container_name: autofix_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./src:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - autofix_php
+      - autofix_mysql
+    networks:
+      - autofix_network
+
+  # PHP-FPM
+  autofix_php:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+      args:
+        - PHP_XDEBUG=$PHP_XDEBUG
+    container_name: autofix_php
+    env_file:
+      - .env
+    volumes:
+      - ./src:/var/www/html
+    environment:
+      - DB_HOST=autofix_mysql
+      - DB_PORT=3306
+      - DB_DATABASE=autofix
+      - DB_USERNAME=autofix_user
+      - DB_PASSWORD=autofix_password
+    depends_on:
+      - autofix_mysql
+    networks:
+      - autofix_network
+
+  # MySQL Database
+  autofix_mysql:
+    image: mysql:8.0
+    container_name: autofix_mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: autofix
+      MYSQL_USER: autofix_user
+      MYSQL_PASSWORD: autofix_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - autofix_network
+
+#  autofix_mailpit:
+#    image: axllent/mailpit:latest
+#    container_name: autofix_mailpit
+#    restart: unless-stopped
+#    ports:
+#      - "1025:1025"   # SMTP порт для отправки
+#      - "8025:8025"   # Web интерфейс
+#    environment:
+#      MP_SMTP_AUTH_ACCEPT_ANY: 1
+#      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+#    volumes:
+#      - mailpit-data:/data
+#    networks:
+#      - autofix_network
+
+  # phpMyAdmin
+  autofix_phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: autofix_phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: autofix_mysql
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: root_password
+    depends_on:
+      - autofix_mysql
+    networks:
+      - autofix_network
+
+networks:
+  autofix_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+#  mailpit-data:
