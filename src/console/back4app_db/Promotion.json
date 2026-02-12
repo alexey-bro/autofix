@@ -1,0 +1,38 @@
+{
+  "results": [
+    {
+      "title": "Скидка 10%",
+      "description": "Ул.9 января 68и",
+      "validUntil": "До конца 2026 года",
+      "phoneNumber": "+79525549509",
+      "conditions": "Необходимо записаться через приложение AutoFix",
+      "order": 2,
+      "imageUrl": "https://parsefiles.back4app.com/qOMFYryeOg3sAFxGH72Cx6cTj79RJ0I9RpQNAT25/1507633ddb1e362a49f30ba6fb00882f_photo_1767794875493.jpg",
+      "createdByMasterId": "user_1764062656508",
+      "createdAt": "2026-01-07T14:08:40.714Z",
+      "updatedAt": "2026-01-21T10:36:15.890Z",
+      "publishedUntil": {
+        "__type": "Date",
+        "iso": "2027-01-28T10:25:37.430Z"
+      },
+      "objectId": "3kPrTsnWAk"
+    },
+    {
+      "title": "Скидка 15%",
+      "description": "Тепличная 1г/4",
+      "validUntil": "До конца года",
+      "phoneNumber": "+79521008736",
+      "conditions": "При записи через приложение AutoFix ",
+      "order": 1,
+      "imageUrl": "https://parsefiles.back4app.com/qOMFYryeOg3sAFxGH72Cx6cTj79RJ0I9RpQNAT25/c1ce08df6972b073c51be9ca0131686a_photo_1769023375351.jpg",
+      "createdByMasterId": "user_1763968323791",
+      "createdAt": "2026-01-15T16:19:46.360Z",
+      "updatedAt": "2026-01-21T19:23:01.087Z",
+      "publishedUntil": {
+        "__type": "Date",
+        "iso": "2027-01-28T10:25:37.430Z"
+      },
+      "objectId": "3v6E1Std1K"
+    }
+  ]
+}

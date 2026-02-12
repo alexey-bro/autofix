@@ -1,0 +1,54 @@
+{
+  "results": [
+    {
+      "masterId": "user_1763968323791",
+      "authorId": "user_1763966131336",
+      "authorName": "Даниил Ч.",
+      "rating": 5,
+      "text": "все понравилось, быстро, качественно ",
+      "createdAt": "2025-11-24T07:15:58.011Z",
+      "updatedAt": "2025-11-24T07:15:58.011Z",
+      "objectId": "FZVzQJIEpn"
+    },
+    {
+      "masterId": "user_1765876700418",
+      "authorId": "user_1765876700418",
+      "authorName": "Юрий Х.",
+      "rating": 5,
+      "text": "всё отлично \n",
+      "createdAt": "2025-12-16T19:03:09.605Z",
+      "updatedAt": "2025-12-16T19:03:09.605Z",
+      "objectId": "WfL7B9FP9m"
+    },
+    {
+      "masterId": "user_1764507866799",
+      "authorId": "user_1763966131336",
+      "authorName": "Даниил Ч.",
+      "rating": 5,
+      "text": "переобувался 22.11.25\nочень понравилось, рекомендую ",
+      "createdAt": "2025-11-30T15:11:29.389Z",
+      "updatedAt": "2025-11-30T15:11:29.389Z",
+      "objectId": "jxx7aExw4o"
+    },
+    {
+      "masterId": "user_1764062656508",
+      "authorId": "user_1763966131336",
+      "authorName": "Даниил Ч.",
+      "rating": 5,
+      "text": "хороший мастер 💪",
+      "createdAt": "2025-11-27T16:39:04.128Z",
+      "updatedAt": "2025-11-27T16:39:04.128Z",
+      "objectId": "oxncEl1oZq"
+    },
+    {
+      "masterId": "user_1765215638254",
+      "authorId": "user_1763966131336",
+      "authorName": "Даниил Ч.",
+      "rating": 5,
+      "text": "отличный сервис, всё понравилось ",
+      "createdAt": "2025-12-09T14:12:38.767Z",
+      "updatedAt": "2025-12-09T14:12:38.767Z",
+      "objectId": "wFQg16gvtI"
+    }
+  ]
+}

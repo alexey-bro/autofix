@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "promotionData": {
+        "title": "Нн",
+        "description": "Тоо",
+        "validUntil": "Ооо",
+        "phoneNumber": "+79506668822",
+        "conditions": "Ртлл",
+        "order": 3,
+        "imageUrl": "https://parsefiles.back4app.com/qOMFYryeOg3sAFxGH72Cx6cTj79RJ0I9RpQNAT25/2e706fe25f6af21398117d25678a0458_photo_1770297347031.jpg"
+      },
+      "paymentId": "3116abd3-000f-5000-b000-16ce166979ab",
+      "userId": "user_1770297291100",
+      "amount": 990,
+      "status": "pending",
+      "confirmationUrl": "https://yoomoney.ru/checkout/payments/v2/contract?orderId=3116abd3-000f-5000-b000-16ce166979ab",
+      "paid": false,
+      "createdAt": "2026-02-05T13:16:03.878Z",
+      "updatedAt": "2026-02-05T13:16:03.878Z",
+      "objectId": "H7jCJ3VY4f"
+    }
+  ]
+}
