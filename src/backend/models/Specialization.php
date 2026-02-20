@@ -1,0 +1,59 @@
+<?php
+
+namespace app\models;
+
+use Yii;
+
+/**
+ * This is the model class for table "specialization".
+ *
+ * @property int $id
+ * @property int $user_id
+ * @property int $specialization_id
+ */
+class Specialization extends \yii\db\ActiveRecord
+{
+
+
+    /**
+     * {@inheritdoc}
+     */
+    public static function tableName()
+    {
+        return 'specialization';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function rules()
+    {
+        return [
+            [['specialization_id'], 'default', 'value' => 0],
+            [['user_id'], 'required'],
+            [['user_id', 'specialization_id'], 'integer'],
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function attributeLabels()
+    {
+        return [
+            'id' => 'ID',
+            'user_id' => 'User ID',
+            'specialization_id' => 'Specialization ID',
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     * @return SpecializationQuery the active query used by this AR class.
+     */
+    public static function find()
+    {
+        return new SpecializationQuery(get_called_class());
+    }
+
+}
