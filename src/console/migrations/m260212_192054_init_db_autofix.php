@@ -4,6 +4,27 @@ use yii\db\Migration;
 
 class m260212_192054_init_db_autofix extends Migration
 {
+
+
+
+    public $specializationList = [
+        'Шиномонтаж и колёса',
+        'Техническое обслуживание (ТО)',
+        'Подвеска и ходовая часть',
+        'Тормозная система',
+        'Выхлопная система',
+        'Аварийные услуги',
+        'Двигатель и система охлаждения',
+        'Подвеска и ходовая часть',
+        'Коробка передач и трансмиссия',
+        'Климат и отопление',
+        'Диагностика (общая)',
+        'Тюниниг и модернизация',
+        'Детейлинг и мойка',
+        'Кузов и покраска',
+        'Акумулятор и зарядка',
+    ];
+
     /**
      * {@inheritdoc}
      */
@@ -43,11 +64,11 @@ class m260212_192054_init_db_autofix extends Migration
 
 
 //            "specialization": "String" id специализации
-            'fullName' => $this->string()->notNull(),
-            'role' => $this->tinyInteger(1)->notNull(),
-            'user_id' => $this->integer()->unsigned()->notNull(),
+            'fullName' => $this->string()->defaultValue(null),
+            'role' => $this->tinyInteger(1)->notNull()->defaultValue(0),
+            'user_id' => $this->integer()->unsigned()->defaultValue(null),
             'phone' => $this->string()->notNull(),
-            'carBrand' => $this->string()->notNull(), //только у клиента
+            'carBrand' => $this->string()->defaultValue(null), //только у клиента
 //            "photoUrl": "String" //В бдругой базе будет
 //            "services": "Array" // этого не будет
 //            "cars": "Array" хз зачем оно
@@ -56,9 +77,9 @@ class m260212_192054_init_db_autofix extends Migration
             'email' => $this->string()->defaultValue(null),
             'rating' => $this->tinyInteger()->notNull()->defaultValue(0),
             'reviewsCount' => $this->integer()->notNull()->defaultValue(0),
-//            "workShifts": "Array" список смен только к мастера // Это в отдельной таблице
-            'latitude' => $this->integer()->defaultValue(null),
-            'longitude' => $this->integer()->defaultValue(null),
+//            "workShifts": "Array" список смен только у мастера // Это в отдельной таблице
+            'latitude' => $this->string()->defaultValue(null),
+            'longitude' => $this->string()->defaultValue(null),
             'workAddress' => $this->string()->defaultValue(null),
 //            "photos": "Array" // тоже в отдельной таблице файлы
             'firstName' => $this->string()->defaultValue(null),
@@ -85,8 +106,9 @@ class m260212_192054_init_db_autofix extends Migration
             'client_id' => $this->integer()->unsigned()->notNull(),
             'master_id' => $this->integer()->unsigned()->notNull(),
 
-            'slotStart' => $this->timestamp()->notNull(),
-            'slotEnd' => $this->timestamp()->notNull(),
+//            'slotStart' => $this->timestamp()->notNull(),
+//            'slotEnd' => $this->timestamp()->notNull(),
+            'work_time_shift_id' => $this->integer()->unsigned()->notNull(),
             'serviceName' => $this->string()->notNull(),
             'status' => $this->tinyInteger()->notNull()->defaultValue(0),
 //            "useMasterKey": "Boolean" // хз зачем это
@@ -109,9 +131,11 @@ class m260212_192054_init_db_autofix extends Migration
 
             'created_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP'),
             'updated_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
-
-
         ]);
+
+        $this->createIndex('idx-booking-client_id', '{{%booking}}', 'client_id');
+        $this->createIndex('idx-booking-master_id', '{{%booking}}', 'master_id');
+        $this->createIndex('idx-booking-work_time_shift_id', '{{%booking}}', 'work_time_shift_id');
 
         $this->createTable('{{%payment}}', [
             'id' => $this->primaryKey(),
@@ -129,7 +153,7 @@ class m260212_192054_init_db_autofix extends Migration
 //            "userId": "String"
 
             'promotion_id' => $this->integer()->unsigned()->notNull(),
-            'userId' => $this->integer()->unsigned()->notNull(),
+            'user_id' => $this->integer()->unsigned()->notNull(),
             'payment_id' => $this->integer()->unsigned()->notNull(),
             'amount' => $this->decimal(12, 2)->defaultValue(0),
             'confirmationUrl' => $this->string()->notNull(),
@@ -137,9 +161,11 @@ class m260212_192054_init_db_autofix extends Migration
             'paid' => $this->boolean()->notNull()->defaultValue(0),
             'created_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP'),
             'updated_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
-
-
         ]);
+
+        $this->createIndex('idx-payment-user_id', '{{%payment}}', 'user_id');
+        $this->createIndex('idx-payment-payment_id', '{{%payment}}', 'payment_id');
+        $this->createIndex('idx-payment-promotion_id', '{{%payment}}', 'promotion_id');
 
         $this->createTable('{{%promotion}}', [
             'id' => $this->primaryKey(),
@@ -171,13 +197,13 @@ class m260212_192054_init_db_autofix extends Migration
             'publishedUntil' => $this->timestamp(),
             'created_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP'),
             'updated_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
-
-
         ]);
+
+        $this->createIndex('idx-promotion-master_id', '{{%promotion}}', 'master_id');
 
         $this->createTable('{{%review}}', [
             'id' => $this->primaryKey(),
-            'user_id' => $this->integer()->unsigned()->notNull(),
+            'client_id' => $this->integer()->unsigned()->notNull(),
             'master_id' => $this->integer()->unsigned()->notNull(),
             'rating' => $this->tinyInteger()->notNull()->defaultValue(0),
             'text' => $this->text()->defaultValue(null),
@@ -198,6 +224,9 @@ class m260212_192054_init_db_autofix extends Migration
 
         ]);
 
+        $this->createIndex('idx-review-client_id', '{{%review}}', 'client_id');
+        $this->createIndex('idx-review-master_id', '{{%review}}', 'master_id');
+
         $this->createTable('{{%specializations}}', [
             'id' => $this->primaryKey(),
             'name' => $this->string(255)->notNull(),
@@ -209,14 +238,25 @@ class m260212_192054_init_db_autofix extends Migration
 
         $this->addCommentOnTable('{{%specializations}}', 'Мастер в своем профиле выбирает специализации по которым он работает (двигатель, трансмиссия, выхлоп). Специализация - это категория');
 
+        foreach ($this->specializationList as $specialization) {
+
+            Yii::$app->db->createCommand()
+                ->insert('specializations', [
+                    'name' => $specialization,
+                ])->execute();
+
+        }
+
 
         $this->createTable('{{%specialization}}', [
             'id' => $this->primaryKey(),
-            'user_id' => $this->integer()->notNull(),
+            'user_profile_id' => $this->integer()->notNull(),
             'specialization_id' => $this->boolean()->notNull()->defaultValue(0),
         ]);
 
         $this->addCommentOnTable('{{%specialization}}', 'Связь пользователя со спецализаций)');
+        $this->createIndex('idx-specialization-user_profile_id', '{{%specialization}}', 'user_profile_id');
+        $this->createIndex('idx-specialization-specialization_id', '{{%specialization}}', 'specialization_id');
 
 
         $this->createTable('{{%services}}', [
@@ -231,22 +271,46 @@ class m260212_192054_init_db_autofix extends Migration
             'updated_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
         ]);
 
-        $this->addCommentOnTable('{{%services}}', 'Связь пользователя со спецализаций)');
+        $this->addCommentOnTable('{{%services}}', 'Услуги, которые оказывает мастер)');
+        $this->createIndex('idx-services-user_id', '{{%services}}', 'user_id');
+        $this->createIndex('idx-services-specialization_id', '{{%services}}', 'specialization_id');
 
 
-        $this->createTable('{{%work_shifts}}', [
+        $this->createTable('{{%work_days_shift}}', [
             'id' => $this->primaryKey(),
             'user_id' => $this->integer()->notNull(),
-
-
-            // :TODO доделать
-
+            'day' => $this->date()->notNull(),
             'created_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP'),
             'updated_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
         ]);
 
-        $this->addCommentOnTable('{{%work_shifts}}', 'Смены работы мастеров)');
+        $this->addCommentOnTable('{{%work_days_shift}}', 'Рабочие дни смен)');
+        $this->createIndex('idx-work_days_shift-user_id', '{{%work_days_shift}}', 'user_id');
 
+        $this->createTable('{{%work_time_shift}}', [
+            'id' => $this->primaryKey(),
+            'work_days_shift_id' => $this->integer()->notNull(),
+            'start' => $this->time(),
+            'stop' => $this->time(),
+            'isAvailable' => $this->boolean()->notNull()->defaultValue(0),
+            'created_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP'),
+            'updated_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
+        ]);
+
+        $this->addCommentOnTable('{{%work_time_shift}}', 'Рабочие время в днях смен)');
+        $this->createIndex('idx-work_time_shift-work_days_shift_id', '{{%work_time_shift}}', 'work_days_shift_id');
+
+
+        $this->createTable('{{%custom_shift_templates}}', [
+            'id' => $this->primaryKey(),
+            'user_id' => $this->integer()->notNull(),
+            'template' => $this->string()->notNull(),
+            'created_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP'),
+            'updated_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
+        ]);
+
+//        $this->addCommentOnTable('{{%work_time_shift}}', '');
+        $this->createIndex('idx-custom_shift_templates-user_id', '{{%custom_shift_templates}}', 'user_id');
 
     }
 
@@ -264,6 +328,10 @@ class m260212_192054_init_db_autofix extends Migration
         $this->dropTable('{{%services}}');
         $this->dropTable('{{%specializations}}');
         $this->dropTable('{{%specialization}}');
+
+        $this->dropTable('{{%work_days_shift}}');
+        $this->dropTable('{{%work_time_shift}}');
+        $this->dropTable('{{%custom_shift_templates}}');
     }
 
 }

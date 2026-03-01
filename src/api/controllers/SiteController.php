@@ -1,8 +1,8 @@
 <?php
-namespace api2\controllers;
+namespace api\controllers;
 
-use api2\components\WebControllerBase;
-use common\models\LoginForm;
+use api\components\WebControllerBase;
+use common\models\form\LoginForm;
 use Yii;
 use yii\filters\AccessControl;
 
