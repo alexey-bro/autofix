@@ -2,6 +2,7 @@
 
 namespace common\models;
 
+use common\models\query\ReviewQuery;
 use Yii;
 
 /**
@@ -11,6 +12,7 @@ use Yii;
  * @property int $client_id
  * @property int $master_id
  * @property int $rating
+ * @property string|null $author_name
  * @property string|null $text
  * @property string $created_at
  * @property string $updated_at
@@ -35,9 +37,9 @@ class Review extends \yii\db\ActiveRecord
         return [
             [['text'], 'default', 'value' => null],
             [['rating'], 'default', 'value' => 0],
-            [['uclient_id', 'master_id'], 'required'],
-            [['uclient_id', 'master_id', 'rating'], 'integer'],
-            [['text'], 'string'],
+            [['client_id', 'master_id'], 'required'],
+            [['client_id', 'master_id', 'rating'], 'integer'],
+            [['text', 'author_name'], 'string'],
             [['created_at', 'updated_at'], 'safe'],
         ];
     }
@@ -49,10 +51,11 @@ class Review extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'uclient_id' => 'User ID',
+            'client_id' => 'User ID',
             'master_id' => 'Master ID',
             'rating' => 'Rating',
             'text' => 'Text',
+            'author_name' => 'author name',
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
         ];

@@ -6,6 +6,7 @@ namespace common\models;
  * This is the model class for table "user_profile".
  *
  * @property int $id
+ * @property string|null $_user_id
  * @property string|null $fullName
  * @property int $role
  * @property int|null $user_id
@@ -28,6 +29,17 @@ namespace common\models;
 class UserProfile extends \yii\db\ActiveRecord
 {
 
+    public const ROLE_USER_CLIENT = 1;
+    public const ROLE_USER_MASTER = 2;
+
+    public static function listRoles()
+    {
+        return [
+            self::ROLE_USER_CLIENT => 'CLIENT',
+            self::ROLE_USER_MASTER => 'MASTER',
+        ];
+    }
+
 
     /**
      * {@inheritdoc}
@@ -44,7 +56,7 @@ class UserProfile extends \yii\db\ActiveRecord
     {
         return [
             [['fullName', 'user_id', 'carBrand', 'city', 'email', 'latitude', 'longitude', 'workAddress', 'firstName', 'lastName', 'companyName'], 'default', 'value' => null],
-            [['experience'], 'default', 'value' => 0],
+            [['experience', 'rating'], 'default', 'value' => 0],
             [['role', 'user_id', 'rating', 'reviewsCount', 'experience'], 'integer'],
             [['phone'], 'required'],
             [['created_at', 'updated_at'], 'safe'],

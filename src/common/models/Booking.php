@@ -20,6 +20,17 @@ use Yii;
 class Booking extends \yii\db\ActiveRecord
 {
 
+    public const STATUS_CONFIRM = 1; //confirmed
+    public const STATUS_REJECT = 2; //rejected
+
+    public static function listStatus()
+    {
+        return [
+            self::STATUS_CONFIRM => "confirmed",
+            self::STATUS_REJECT => "rejected",
+        ];
+    }
+
 
     /**
      * {@inheritdoc}

@@ -64,6 +64,7 @@ class m260212_192054_init_db_autofix extends Migration
 
 
 //            "specialization": "String" id специализации
+            '_user_id' => $this->string()->defaultValue(null),
             'fullName' => $this->string()->defaultValue(null),
             'role' => $this->tinyInteger(1)->notNull()->defaultValue(0),
             'user_id' => $this->integer()->unsigned()->defaultValue(null),
@@ -109,7 +110,8 @@ class m260212_192054_init_db_autofix extends Migration
 //            'slotStart' => $this->timestamp()->notNull(),
 //            'slotEnd' => $this->timestamp()->notNull(),
             'work_time_shift_id' => $this->integer()->unsigned()->notNull(),
-            'serviceName' => $this->string()->notNull(),
+//            'service_name' => $this->string()->notNull(),
+            'service_id' => $this->integer()->unsigned()->notNull(),
             'status' => $this->tinyInteger()->notNull()->defaultValue(0),
 //            "useMasterKey": "Boolean" // хз зачем это
 
@@ -153,7 +155,7 @@ class m260212_192054_init_db_autofix extends Migration
 //            "userId": "String"
 
             'promotion_id' => $this->integer()->unsigned()->notNull(),
-            'user_id' => $this->integer()->unsigned()->notNull(),
+            'user_profile_id' => $this->integer()->unsigned()->notNull(),
             'payment_id' => $this->integer()->unsigned()->notNull(),
             'amount' => $this->decimal(12, 2)->defaultValue(0),
             'confirmationUrl' => $this->string()->notNull(),
@@ -163,7 +165,7 @@ class m260212_192054_init_db_autofix extends Migration
             'updated_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
         ]);
 
-        $this->createIndex('idx-payment-user_id', '{{%payment}}', 'user_id');
+        $this->createIndex('idx-payment-user_profile_id', '{{%payment}}', 'user_profile_id');
         $this->createIndex('idx-payment-payment_id', '{{%payment}}', 'payment_id');
         $this->createIndex('idx-payment-promotion_id', '{{%payment}}', 'promotion_id');
 
@@ -187,14 +189,14 @@ class m260212_192054_init_db_autofix extends Migration
 
             'title' => $this->string()->notNull(),
             'description' => $this->string()->notNull(),
-            'validUntil' => $this->timestamp()->defaultValue(null)->comment('дата окончания самой акции (для клиента)'),
+            'validUntil' => $this->string()->defaultValue(null),
             'order' => $this->integer()->unsigned(),
             'phoneNumber' => $this->string()->defaultValue(null),
             'conditions' => $this->string()->defaultValue(null),
 //            "imageUrl": "String", "required": false // фото будет храниться отдельно
             'master_id' => $this->integer()->unsigned(),
             'isPaid' => $this->boolean()->defaultValue(false),
-            'publishedUntil' => $this->timestamp(),
+            'publishedUntil' => $this->timestamp()->comment('Опубликовано до даты'),
             'created_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP'),
             'updated_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
         ]);
@@ -205,6 +207,7 @@ class m260212_192054_init_db_autofix extends Migration
             'id' => $this->primaryKey(),
             'client_id' => $this->integer()->unsigned()->notNull(),
             'master_id' => $this->integer()->unsigned()->notNull(),
+            'author_name' => $this->string()->defaultValue(null),
             'rating' => $this->tinyInteger()->notNull()->defaultValue(0),
             'text' => $this->text()->defaultValue(null),
             'created_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP'),
@@ -261,7 +264,7 @@ class m260212_192054_init_db_autofix extends Migration
 
         $this->createTable('{{%services}}', [
             'id' => $this->primaryKey(),
-            'user_id' => $this->integer()->notNull(),
+            'user_profile_id' => $this->integer()->notNull(),
             'specialization_id' => $this->boolean()->notNull()->defaultValue(0),
             'name' => $this->string(255)->notNull(),
             'description' => $this->string(255)->defaultValue(null),
@@ -272,20 +275,20 @@ class m260212_192054_init_db_autofix extends Migration
         ]);
 
         $this->addCommentOnTable('{{%services}}', 'Услуги, которые оказывает мастер)');
-        $this->createIndex('idx-services-user_id', '{{%services}}', 'user_id');
+        $this->createIndex('idx-services-user_profile_id', '{{%services}}', 'user_profile_id');
         $this->createIndex('idx-services-specialization_id', '{{%services}}', 'specialization_id');
 
 
         $this->createTable('{{%work_days_shift}}', [
             'id' => $this->primaryKey(),
-            'user_id' => $this->integer()->notNull(),
+            'user_profile_id' => $this->integer()->notNull(),
             'day' => $this->date()->notNull(),
             'created_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP'),
             'updated_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
         ]);
 
         $this->addCommentOnTable('{{%work_days_shift}}', 'Рабочие дни смен)');
-        $this->createIndex('idx-work_days_shift-user_id', '{{%work_days_shift}}', 'user_id');
+        $this->createIndex('idx-work_days_shift-user_profile_id', '{{%work_days_shift}}', 'user_profile_id');
 
         $this->createTable('{{%work_time_shift}}', [
             'id' => $this->primaryKey(),
@@ -303,14 +306,14 @@ class m260212_192054_init_db_autofix extends Migration
 
         $this->createTable('{{%custom_shift_templates}}', [
             'id' => $this->primaryKey(),
-            'user_id' => $this->integer()->notNull(),
+            'user_profile_id' => $this->integer()->notNull(),
             'template' => $this->string()->notNull(),
             'created_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP'),
             'updated_at' => $this->timestamp()->notNull()->defaultExpression('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
         ]);
 
 //        $this->addCommentOnTable('{{%work_time_shift}}', '');
-        $this->createIndex('idx-custom_shift_templates-user_id', '{{%custom_shift_templates}}', 'user_id');
+        $this->createIndex('idx-custom_shift_templates-user_profile_id', '{{%custom_shift_templates}}', 'user_profile_id');
 
     }
 
