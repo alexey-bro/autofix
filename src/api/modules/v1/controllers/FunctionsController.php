@@ -46,6 +46,19 @@ class FunctionsController extends ActiveController
 //        "customShiftTemplates": null
     }
 
+    public function actionGetAllUsers()
+    {
+        $allUsers = UserProfileApp::find()
+//            ->where(['_user_id' => 'user_1763968323791'])
+            ->all();
+
+        return [
+            'result' => $allUsers,
+        ];
+
+    }
+
+
     public function actionCreateYookassaPayment()
     {
         return 'actionCreateYookassaPayment';
@@ -74,11 +87,6 @@ class FunctionsController extends ActiveController
     public function actionRequestPhoneVerification()
     {
         return 'actionRequestPhoneVerification';
-    }
-
-    public function actionGetAllUsers()
-    {
-        return 'actionGetAllUsers';
     }
 
     public function actionUpdateUserProfile()

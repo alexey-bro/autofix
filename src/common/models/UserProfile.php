@@ -92,6 +92,41 @@ class UserProfile extends \yii\db\ActiveRecord
         ];
     }
 
+
+//    /**
+//     * @return \yii\db\ActiveQuery
+//     */
+//    public function getSpecializations()
+//    {
+//        return $this->hasOne(Specializations::class, ['id' => 'user_profile_id']);
+//    }
+
+    /**
+     * Основная связь: пользователь имеет много категорий через промежуточную таблицу
+     */
+    public function getSpecializations()
+    {
+        return $this->hasMany(Specializations::class, ['id' => 'specialization_id'])
+            ->viaTable('specialization', ['user_profile_id' => 'id']);
+    }
+
+    /**
+     * Альтернативный вариант с via()
+     */
+    public function getSpecializationsVia()
+    {
+        return $this->hasMany(Specializations::class, ['id' => 'specialization_id'])
+            ->via('specializationsRecords');
+    }
+
+    /**
+     * Прямая связь с промежуточной таблицей
+     */
+    public function getSpecializationsRecords()
+    {
+        return $this->hasMany(Specialization::class, ['user_profile_id' => 'id']);
+    }
+
     /**
      * {@inheritdoc}
      * @return \common\models\query\UserProfileQuery the active query used by this AR class.
