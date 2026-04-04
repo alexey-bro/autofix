@@ -14,6 +14,7 @@
     },
     "minimum-stability": "stable",
     "require": {
+        "ext-intl": "*",
         "php": ">=7.4.0",
         "yiisoft/yii2": "~2.0.45",
         "yiisoft/yii2-bootstrap5": "~2.0.2",

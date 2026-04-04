@@ -1,8 +1,8 @@
 services:
   # Nginx Web Server
-  autofix_nginx:
+  autofix_yii2_nginx:
     image: nginx:alpine
-    container_name: autofix_nginx
+    container_name: autofix_yii2_nginx
     ports:
       - "80:80"
       - "443:443"
@@ -10,38 +10,38 @@ services:
       - ./src:/var/www/html
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
-      - autofix_php
-      - autofix_mysql
+      - autofix_yii2_php
+      - autofix_yii2_mysql
     networks:
-      - autofix_network
+      - autofix_yii2_network
 
   # PHP-FPM
-  autofix_php:
+  autofix_yii2_php:
     build:
       context: ./docker/php
       dockerfile: Dockerfile
       args:
         - PHP_XDEBUG=$PHP_XDEBUG
-    container_name: autofix_php
+    container_name: autofix_yii2_php
     env_file:
       - .env
     volumes:
       - ./src:/var/www/html
     environment:
-      - DB_HOST=autofix_mysql
+      - DB_HOST=autofix_yii2_mysql
       - DB_PORT=3306
       - DB_DATABASE=autofix
       - DB_USERNAME=autofix_user
       - DB_PASSWORD=autofix_password
     depends_on:
-      - autofix_mysql
+      - autofix_yii2_mysql
     networks:
-      - autofix_network
+      - autofix_yii2_network
 
   # MySQL Database
-  autofix_mysql:
+  autofix_yii2_mysql:
     image: mysql:8.0
-    container_name: autofix_mysql
+    container_name: autofix_yii2_mysql
     ports:
       - "3306:3306"
     environment:
@@ -52,11 +52,11 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - autofix_network
+      - autofix_yii2_network
 
-#  autofix_mailpit:
+#  autofix_yii2_mailpit:
 #    image: axllent/mailpit:latest
-#    container_name: autofix_mailpit
+#    container_name: autofix_yii2_mailpit
 #    restart: unless-stopped
 #    ports:
 #      - "1025:1025"   # SMTP порт для отправки
@@ -70,22 +70,22 @@ services:
 #      - autofix_network
 
   # phpMyAdmin
-  autofix_phpmyadmin:
+  autofix_yii2_phpmyadmin:
     image: phpmyadmin:latest
-    container_name: autofix_phpmyadmin
+    container_name: autofix_yii2_phpmyadmin
     ports:
       - "8080:80"
     environment:
-      PMA_HOST: autofix_mysql
+      PMA_HOST: autofix_yii2_mysql
       PMA_PORT: 3306
       MYSQL_ROOT_PASSWORD: root_password
     depends_on:
-      - autofix_mysql
+      - autofix_yii2_mysql
     networks:
-      - autofix_network
+      - autofix_yii2_network
 
 networks:
-  autofix_network:
+  autofix_yii2_network:
     driver: bridge
 
 volumes:
