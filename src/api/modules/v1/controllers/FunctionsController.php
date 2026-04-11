@@ -6,6 +6,7 @@ use api\modules\v1\models\BookingApp;
 use api\modules\v1\models\PromotionApp;
 use api\modules\v1\models\ReviewApp;
 use api\modules\v1\models\UserProfileApp;
+use api\modules\v1\models\WorkDaysShiftApp;
 use backend\assets\AppAsset;
 use backend\controllers\ReviewController;
 use common\models\Booking;
@@ -1132,6 +1133,89 @@ class FunctionsController extends ActiveController
 
     }
 
+    public function actionDeleteWorkShift()
+    {
+
+        $params = Yii::$app->getRequest()->getBodyParams();
+
+        $masterId = $params['userId'] ?? null;
+        $shiftDate = $params['shiftDate'] ?? null;
+
+        if (!$masterId || !$shiftDate) {
+            return [
+                "code" => 141,
+                "error" => "Не хватает параметров: userId и shiftDate обязательны",
+            ];
+        }
+
+        $DTShiftDate = null;
+
+        try {
+            $DTShiftDate = new DateTime($shiftDate);
+        } catch (\Exception $e) {
+            Yii::error($e->getMessage(), __METHOD__);
+            return [
+                "code" => 141,
+                "error" => "Неверный формат даты",
+            ];
+
+        }
+
+        if ($Master = UserProfile::findOne($masterId)) {
+
+
+            $workDaysShift = WorkDaysShift::find()
+                ->where([
+                    'user_profile_id' => $Master->id,
+                    'work_days_shift.day' => $DTShiftDate->format('Y-m-d'),
+                ])->one();
+
+            $isRealDelete = false;
+            if ($workDaysShift) {
+
+                $listWorkTimeShift = $workDaysShift->workTimeShift;
+
+                // TODO:передклат на удаление из модели в before delete
+
+                foreach ($listWorkTimeShift as $workTimeShift) {
+                    /** @var WorkTimeShift $workTimeShift */
+
+                    foreach ($workTimeShift->bookings as $Booking) {
+                        $Booking->delete();
+                    }
+
+                    $workTimeShift->delete();
+                }
+
+                if ($workDaysShift->delete()) {
+                    $isRealDelete = true;
+                }
+            }
+
+            $workDaysShift = WorkDaysShiftApp::find()
+                ->where([
+                    'user_profile_id' => $Master->id,
+                ])->all();
+
+            return [
+                "result" => [
+                    'success' => true,
+                    'shiftRemoved' => $isRealDelete,
+                    'updatedWorkShifts' => $workDaysShift,
+                ],
+            ];
+
+
+
+
+        } else {
+            return [
+                "code" => 141,
+                "error" => "Пользователь не найден",
+            ];
+        }
+    }
+
 
     public function actionCreateYookassaPayment()
     {
@@ -1163,10 +1247,7 @@ class FunctionsController extends ActiveController
         return 'actionDeletePhoto';
     }
 
-    public function actionDeleteWorkShift()
-    {
-        return 'actionDeleteWorkShift';
-    }
+
 
 
 
