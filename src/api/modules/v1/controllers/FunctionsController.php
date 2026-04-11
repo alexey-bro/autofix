@@ -1066,6 +1066,73 @@ class FunctionsController extends ActiveController
     }
 
 
+
+
+    public function actionUpdateBookingStatus()
+    {
+
+        $params = Yii::$app->getRequest()->getBodyParams();
+
+        $bookingId = $params['bookingId'] ?? null;
+        $status = $params['status'] ?? null;
+
+        if (!$bookingId || !$status) {
+            return [
+                "code" => 141,
+                "error" => "Не хватает параметров",
+            ];
+        }
+
+        if ($Booking = Booking::findOne($bookingId)) {
+
+            $Booking->status = $status;
+
+            if (!in_array($status, array_keys(Booking::listStatus()))) {
+                return [
+                    "code" => 141,
+                    "error" => "Ошибка, неверный статус",
+                ];
+            }
+
+            if ($Booking->save()) {
+
+                //TODO: отправить уведомление клиенту
+
+                /*
+                  await Parse.Push.send({
+                    where: pushQuery,
+                    data: {
+                      alert: status === "confirmed"
+                        ? "Ваша запись подтверждена мастером"
+                        : "Ваша запись отклонена мастером",
+                      title: "Статус записи",
+                      sound: "default"
+                    }
+                  });
+                 */
+
+                return [
+                    "result" => [
+                        "success" => true,
+                    ]
+                ];
+            }
+
+        } else {
+            return [
+                "code" => 141,
+                "error" => "Бронирование не найдено",
+            ];
+        }
+
+        return [
+            "code" => 141,
+            "error" => "Ошибка обработки данных",
+        ];
+
+    }
+
+
     public function actionCreateYookassaPayment()
     {
         return 'actionCreateYookassaPayment';
@@ -1089,13 +1156,6 @@ class FunctionsController extends ActiveController
     public function actionWorkShifts()
     {
         return 'actionWorkShifts';
-    }
-
-
-
-    public function actionUpdateBookingStatus()
-    {
-        return 'actionUpdateBookingStatus';
     }
 
     public function actionDeletePhoto()

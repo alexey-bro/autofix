@@ -58,7 +58,7 @@ class Booking extends \yii\db\ActiveRecord
             [['client_id', 'master_id', 'work_time_shift_id', 'service_id'], 'required'],
             [['client_id', 'master_id', 'status', 'service_id'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
-//            [['serviceName'], 'string', 'max' => 255],
+            ['status', 'in', 'range' => array_keys(self::listStatus())],
         ];
     }
 
