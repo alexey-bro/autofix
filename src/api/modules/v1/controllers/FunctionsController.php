@@ -1217,6 +1217,141 @@ class FunctionsController extends ActiveController
     }
 
 
+    public function actionUpdateMasterScheduleAndServices()
+    {
+
+        $params = Yii::$app->getRequest()->getBodyParams();
+
+        $masterId = $params['userId'] ?? null;
+        $services = $params['services'] ?? null;
+        $workShifts = $params['workShifts'] ?? null;
+        $customShiftTemplates = $params['customShiftTemplates'] ?? null;
+
+        $Master = UserProfileApp::findOne($masterId);
+
+        if (!$Master) {
+            return [
+                "code" => 141,
+                "error" => "Пользователь не найден",
+            ];
+        }
+
+
+        if ($services) {
+
+            $listServices = Services::find()
+                ->where(['user_profile_id' => $Master->id])
+                ->all();
+
+            foreach ($listServices as $Service) {
+                $Service->delete();
+            }
+
+            foreach ($services as $service) {
+
+                if ($Specialization = Specializations::findOne(['name' => $service['category']])) {
+
+                    $Service = new Services();
+                    $Service->user_profile_id = $Master->id;
+                    $Service->specialization_id = $Specialization->id;
+                    $Service->name = $service['name'];
+                    $Service->description = $service['description'];
+                    $Service->price_from = $service['priceFrom'];
+                    $Service->price_to = $service['priceTo'] ?? null;
+                    $Service->save();
+
+                    //TODO доделать сохранение фотографий
+
+                }
+            }
+
+        }
+
+        if ($workShifts) {
+
+            $UserWorkShiftDays = WorkDaysShift::find()->where(['user_profile_id' => $Master->id])->all();
+            $UserWorkShiftTimes = [];
+
+            foreach ($UserWorkShiftDays as $UserWorkShiftDay) {
+
+                $workTimeShifts = $UserWorkShiftDay->workTimeShift;
+
+                foreach ($workTimeShifts as $workTimeShift) {
+                    $workTimeShift->delete();
+                }
+
+                $UserWorkShiftDay->delete();
+            }
+
+
+            foreach ($workShifts as $workShift) {
+
+                $DTWorkShift = new DateTime($workShift['date']);
+
+                if (isset($workShift['slots'])) {
+
+                    $WorkDaysShift = new WorkDaysShift();
+                    $WorkDaysShift->user_profile_id = $Master->id;
+                    $WorkDaysShift->day = $DTWorkShift->format('Y-m-d');
+
+                    if ($WorkDaysShift->save()) {
+                        foreach ($workShift['slots'] as $slot) {
+
+                            $DTWorkShiftTimeStart = new DateTime($slot['startTime']);
+                            $DTWorkShiftTimeEnd = new DateTime($slot['endTime']);
+
+                            $WorkTimeShift = new WorkTimeShift();
+                            $WorkTimeShift->work_days_shift_id = $WorkDaysShift->id;
+                            $WorkTimeShift->start = $DTWorkShiftTimeStart->format('H:i:s');
+                            $WorkTimeShift->stop = $DTWorkShiftTimeEnd->format('H:i:s');
+                            $WorkTimeShift->isAvailable = (int) $slot['isAvailable'];
+                            $WorkTimeShift->save();
+
+                        }
+                    }
+
+
+                }
+
+            }
+
+        }
+
+        if ($customShiftTemplates &&is_iterable($customShiftTemplates)) {
+
+            $newCustomShiftTemplates = [];
+
+            foreach ($customShiftTemplates as $customShiftTemplate) {
+                $customShiftTemplatesParts = explode('-', $customShiftTemplate);
+
+                $newCustomShiftTemplates[] = $customShiftTemplatesParts[0] . '-' . $customShiftTemplatesParts[1];
+            }
+
+            //Удаляем старые специализации
+            $listCustomShiftTemplates = CustomShiftTemplates::find()
+                ->where(['user_profile_id' => $Master->id])
+                ->all();
+
+            foreach ($listCustomShiftTemplates as $CustomShiftTemplate) {
+                $CustomShiftTemplate->delete();
+            }
+
+            foreach ($newCustomShiftTemplates as $CustomShiftTemplate) {
+                $ModelCustomShiftTemplate = new CustomShiftTemplates();
+                $ModelCustomShiftTemplate->user_profile_id = $Master->id;
+                $ModelCustomShiftTemplate->template = $CustomShiftTemplate;
+
+                $ModelCustomShiftTemplate->save();
+            }
+
+        }
+
+        return [
+            "result" => $Master,
+        ];
+    }
+
+
     public function actionCreateYookassaPayment()
     {
         return 'actionCreateYookassaPayment';
@@ -1232,15 +1367,11 @@ class FunctionsController extends ActiveController
         return 'actionYookassaWebhook';
     }
 
-    public function actionUpdateMasterScheduleAndServices()
-    {
-        return 'actionUpdateMasterScheduleAndServices';
-    }
 
-    public function actionWorkShifts()
-    {
-        return 'actionWorkShifts';
-    }
+//    public function actionWorkShifts()
+//    {
+//        return 'actionWorkShifts';
+//    }
 
     public function actionDeletePhoto()
     {
