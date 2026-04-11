@@ -850,6 +850,15 @@ class FunctionsController extends ActiveController
 
 //        $userId = $params['userId'] ?? null;
 
+
+//        $book = Booking::findOne(1);
+////        var_dump($book->workTimeShift);
+//        var_dump($book->workDaysShift);
+//
+//        die;
+
+
+
         $masterId = $params['masterId'] ?? null;
         $clientId = $params['clientId'] ?? null;
         $serviceName = $params['serviceName'] ?? null;
@@ -882,16 +891,138 @@ class FunctionsController extends ActiveController
         }
 
 
-        $Booking = Booking::find()
-            ->joinWith('workTimeShift')
-//            ->with(['workTimeShift', 'workDaysShift'])
-//            ->andWhere(['client_id' => $Client->id])
-//            ->andWhere(['master_id' => $Master->id])
-//            ->andWhere(['user_profile_id' => $Master->id])
-//            ->andWhere(['user_profile_id' => $Master->id])
-            ->all();
+        // Извлекаем дату и время
 
-        return 'actionBookSlot';
+        $DTStart = new DateTime($startTime);
+        $DTEnd = new DateTime($endTime);
+
+        if (!$DTStart || !$DTEnd) {
+            return [
+                "code" => 141,
+                "error" => "Некорректные даты начала и окончания смены",
+            ];
+        }
+
+
+
+        if ($DTStart->format('Y-m-d') != $DTEnd->format('Y-m-d')) {
+            return [
+                "code" => 141,
+                "error" => "Некорректные даты начала и окончания смены",
+            ];
+        }
+
+        $day = $DTStart->format('Y-m-d');
+        $startTime = $DTStart->format('H:i:s');
+        $endTime = $DTEnd->format('H:i:s');
+
+        $bookingExists = Booking::find()
+            ->joinWith(['workTimeShift'])
+            ->joinWith(['workDaysShift'])
+            ->where([
+                'work_days_shift.user_profile_id' => $masterId,
+                'work_days_shift.day' => $day,
+            ])
+            ->andWhere(['<=', 'work_time_shift.start', $startTime])   // Интервалы пересекаются, если
+            ->andWhere(['>=', 'work_time_shift.stop', $endTime])  // начало < stop_нового И stop > start_нового
+            ->exists();
+
+        // TODO: еще добавить условия на booking.status,
+
+        if ($bookingExists)  {
+            return [
+                "code" => 141,
+                "error" => "Этот слот уже забронирован. Пожалуйста, выберите другой.",
+            ];
+        }
+
+
+//        $slotExists = UserProfile::find()
+//            ->joinWith(['workDaysShift'])
+//            ->joinWith(['workTimeShift'])
+//            ->where([
+//                'user_profile.id' => $masterId,
+//                'work_days_shift.day' => $day,
+//            ])
+//            ->andWhere(['<=', 'work_time_shift.start', $startTime])   // Интервалы пересекаются, если
+//            ->andWhere(['>=', 'work_time_shift.stop', $endTime])  // начало < stop_нового И stop > start_нового
+////                ->exists();
+//            ->all();
+//
+//        var_dump($slotExists);
+//        die;
+
+        $Slot = $Master->getWorkTimeShiftByDateTime($DTStart, $DTEnd);
+
+        $Service = Services::find()
+            ->where([
+                'user_profile_id' => $Master->id,
+                'name' => $serviceName,
+            ])->one();
+
+        if (!$Service) {
+            return [
+                "code" => 141,
+                "error" => "Услуга, которую вы запрашиваете, не найдена.",
+            ];
+        }
+
+
+        if ($Slot) {
+
+            if (!$Slot->isAvailable) {
+                return [
+                    "code" => 141,
+                    "error" => "Этот слот уже недоступен для записи. Пожалуйста, выберите другой.",
+                ];
+            } else {
+
+                $Booking = new Booking();
+                $Booking->client_id = $Client->id;
+                $Booking->master_id = $Master->id;
+                $Booking->work_time_shift_id = $Slot->id;
+                $Booking->status = Booking::STATUS_PROCESSING;
+                $Booking->service_id = $Service->id;
+
+                $Slot->isAvailable = 0;
+
+                $transaction = Yii::$app->db->beginTransaction();
+
+                try {
+                    if (!$Booking->save()) {
+                        return [
+                            "code" => 141,
+                            "error" => "Ошибка сохранения бронирования",
+                        ];
+                    }
+
+                    if (!$Slot->save()) {
+                        return [
+                            "code" => 141,
+                            "error" => "Ошибка сохранения слота",
+                        ];
+                    }
+
+                    $transaction->commit();
+                    return [
+                        "result" => $Booking,
+                    ];
+
+                } catch (\Exception $e) {
+                    $transaction->rollBack();
+                    Yii::error($e->getMessage(), __METHOD__);
+                    return [
+                        "code" => 141,
+                        "error" => "Ошибка сохранения",
+                    ];
+                }
+            }
+        } else {
+            return [
+                "code" => 141,
+                "error" => "Слот не найдем у мастера",
+            ];
+        }
     }
 
     public function actionCreateYookassaPayment()

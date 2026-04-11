@@ -14,6 +14,10 @@ use Yii;
  * @property int $isAvailable
  * @property string $created_at
  * @property string $updated_at
+ *
+ * @property WorkDaysShift $workDaysShift
+ * @property Booking $bookings
+ * @property UserProfile $userProfile
  */
 class WorkTimeShift extends \yii\db\ActiveRecord
 {
@@ -60,9 +64,24 @@ class WorkTimeShift extends \yii\db\ActiveRecord
     /**
      * Связь с dayShift
      */
-    public function getWorkDaysShift()
+    public function getWorkDaysShift(): \yii\db\ActiveQuery
     {
         return $this->hasOne(WorkDaysShift::class, ['id' => 'work_days_shift_id']);
+    }
+
+    // Связь с бронированиями
+    public function getBookings(): \yii\db\ActiveQuery
+    {
+        return $this->hasMany(Booking::class, ['work_time_shift_id' => 'id']);
+    }
+
+    /**
+     * Транзитная связь с пользователем
+     */
+    public function getUserProfile()
+    {
+        return $this->hasOne(UserProfile::class, ['id' => 'user_profile_id'])
+            ->via('workDaysShift');
     }
 
     /**

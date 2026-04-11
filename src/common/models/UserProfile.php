@@ -27,6 +27,8 @@ namespace common\models;
  * @property string $updated_at
  *
  * @property WorkDaysShift $workDaysShift
+ * @property WorkDaysShift $workDaysShifts
+ * @property WorkTimeShift $workTimeShifts
  * @property Services $services
  * @property Review $reviewClient
  * @property Review $reviewMaster
@@ -118,7 +120,48 @@ class UserProfile extends \yii\db\ActiveRecord
             ->viaTable('specialization', ['user_profile_id' => 'id']);
     }
 
+    /**
+     * Связь со временем работы через рабочие дни
+     */
+    public function getWorkTimeShifts()
+    {
+        return $this->hasMany(WorkTimeShift::class, ['work_days_shift_id' => 'id'])
+            ->via('workDaysShifts');
+    }
+
+    /**
+     * Получить слот по дате и времени
+     */
+    public function getWorkTimeShiftByDateTime(\DateTime $DTStart, \DateTime $DTStop): null|WorkTimeShift
+    {
+        $date = $DTStart->format('Y-m-d');
+        $startTime = $DTStart->format('H:i:s');
+        $stopTime = $DTStop->format('H:i:s');
+
+        return $this->getWorkTimeShifts()
+            ->joinWith('workDaysShift')
+            ->andWhere(['work_days_shift.day' => $date])
+            ->andWhere(['work_time_shift.start' => $startTime])
+            ->andWhere(['work_time_shift.stop' => $stopTime])
+            ->one();
+    }
+
+    // Транзитная связь к work_days_shift (через work_time_shift)
+//    public function getWorkDaysShift(): \yii\db\ActiveQuery
+//    {
+//        return $this->hasOne(WorkDaysShift::class, ['id' => 'work_days_shift_id'])
+//            ->via('workTimeShift');
+//    }
+
     public function getWorkDaysShift()
+    {
+        return $this->hasMany(WorkDaysShift::class, ['user_profile_id' => 'id']);
+    }
+
+    /**
+     * Связь с рабочими днями
+     */
+    public function getWorkDaysShifts()
     {
         return $this->hasMany(WorkDaysShift::class, ['user_profile_id' => 'id']);
     }
@@ -177,6 +220,19 @@ class UserProfile extends \yii\db\ActiveRecord
     {
         return $this->hasMany(Specialization::class, ['user_profile_id' => 'id']);
     }
+
+
+//    public function getWorkTimeShift(): \yii\db\ActiveQuery
+//    {
+//        return $this->hasOne(WorkTimeShift::class, ['id' => 'work_time_shift_id']);
+//    }
+//
+//    // Транзитная связь к work_days_shift (через work_time_shift)
+//    public function getWorkDaysShift(): \yii\db\ActiveQuery
+//    {
+//        return $this->hasOne(WorkDaysShift::class, ['id' => 'work_days_shift_id'])
+//            ->via('workTimeShift');
+//    }
 
     /**
      * {@inheritdoc}

@@ -12,6 +12,8 @@ namespace common\models;
  * @property string $updated_at
  *
  * @property WorkTimeShift $workTimeShift
+ * @property WorkTimeShift $workTimeShifts
+ * @property UserProfile $userProfile
  */
 class WorkDaysShift extends \yii\db\ActiveRecord
 {
@@ -63,6 +65,14 @@ class WorkDaysShift extends \yii\db\ActiveRecord
      * Связь с workTimeShift (один ко многим)
      */
     public function getWorkTimeShift()
+    {
+        return $this->hasMany(WorkTimeShift::class, ['work_days_shift_id' => 'id']);
+    }
+
+    /**
+     * Связь с временными слотами
+     */
+    public function getWorkTimeShifts()
     {
         return $this->hasMany(WorkTimeShift::class, ['work_days_shift_id' => 'id']);
     }
