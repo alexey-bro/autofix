@@ -106,6 +106,24 @@ class Booking extends \yii\db\ActiveRecord
             ->via('workTimeShift');
     }
 
+    public function beforeDelete()
+    {
+        if (!parent::beforeDelete()) {
+            return false;
+        }
+
+        if ($WorkTimeShift = $this->workTimeShift) {
+
+            $WorkTimeShift->isAvailable = 1;
+            if (!$WorkTimeShift->save()) {
+
+                return false;
+            }
+        }
+
+        return true; // Продолжаем физическое удаление
+    }
+
 //    // Транзитная связь к пользователю (мастеру) через work_days_shift
 //    public function getMaster()
 //    {

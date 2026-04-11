@@ -6,6 +6,7 @@ use api\modules\v1\models\BookingApp;
 use api\modules\v1\models\PromotionApp;
 use api\modules\v1\models\ReviewApp;
 use api\modules\v1\models\UserProfileApp;
+use backend\assets\AppAsset;
 use backend\controllers\ReviewController;
 use common\models\Booking;
 use common\models\CustomShiftTemplates;
@@ -1004,8 +1005,15 @@ class FunctionsController extends ActiveController
                     }
 
                     $transaction->commit();
+
+                    // TODO: Пуш уведомление мастеру о новом бронировании
+
+
                     return [
-                        "result" => $Booking,
+                        "result" => [
+                            "success" => true,
+                            "bookingId" => $Booking->id,
+                        ]
                     ];
 
                 } catch (\Exception $e) {
@@ -1024,6 +1032,39 @@ class FunctionsController extends ActiveController
             ];
         }
     }
+
+    public function actionCancelBooking()
+    {
+
+        $params = Yii::$app->getRequest()->getBodyParams();
+
+        $bookingId = $params['bookingId'] ?? null;
+
+        if ($bookingId && ($Booking = Booking::findOne($bookingId))) {
+            // TODO: Пуш уведомление мастеру о отмене бронирования клиентом
+
+            if ($Booking->delete()) {
+                return [
+                    "result" => [
+                        "success" => true,
+                    ]
+                ];
+            }
+
+        } else {
+            return [
+                "code" => 141,
+                "error" => "Бронирование не найдено",
+            ];
+        }
+
+        return [
+            "code" => 141,
+            "error" => "Ошибка обработки данных",
+        ];
+
+    }
+
 
     public function actionCreateYookassaPayment()
     {
@@ -1050,10 +1091,7 @@ class FunctionsController extends ActiveController
         return 'actionWorkShifts';
     }
 
-    public function actionCancelBooking()
-    {
-        return 'actionCancelBooking';
-    }
+
 
     public function actionUpdateBookingStatus()
     {
