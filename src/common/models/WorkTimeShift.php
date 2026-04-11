@@ -58,6 +58,14 @@ class WorkTimeShift extends \yii\db\ActiveRecord
     }
 
     /**
+     * Связь с dayShift
+     */
+    public function getWorkDaysShift()
+    {
+        return $this->hasOne(WorkDaysShift::class, ['id' => 'work_days_shift_id']);
+    }
+
+    /**
      * {@inheritdoc}
      * @return \common\models\query\WorkTimeShiftQuery the active query used by this AR class.
      */

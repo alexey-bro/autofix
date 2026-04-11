@@ -25,6 +25,14 @@ namespace common\models;
  * @property string|null $companyName
  * @property string $created_at
  * @property string $updated_at
+ *
+ * @property WorkDaysShift $workDaysShift
+ * @property Services $services
+ * @property Review $reviewClient
+ * @property Review $reviewMaster
+ * @property Booking $bookingClient
+ * @property Booking $bookingMaster
+ * @property Promotion $promotion
  */
 class UserProfile extends \yii\db\ActiveRecord
 {
@@ -109,6 +117,49 @@ class UserProfile extends \yii\db\ActiveRecord
         return $this->hasMany(Specializations::class, ['id' => 'specialization_id'])
             ->viaTable('specialization', ['user_profile_id' => 'id']);
     }
+
+    public function getWorkDaysShift()
+    {
+        return $this->hasMany(WorkDaysShift::class, ['user_profile_id' => 'id']);
+    }
+
+    public function getServices()
+    {
+        return $this->hasMany(Services::class, ['user_profile_id' => 'id']);
+    }
+
+    public function getReviewClient()
+    {
+        return $this->hasMany(Review::class, ['id' => 'client_id']);
+    }
+
+    public function getReviewMaster()
+    {
+        return $this->hasMany(Review::class, ['id' => 'master_id']);
+    }
+
+    public function getBookingClient()
+    {
+        return $this->hasMany(Booking::class, ['id' => 'master_id']);
+    }
+
+    public function getBookingMaster()
+    {
+        return $this->hasMany(Booking::class, ['id' => 'client_id']);
+    }
+
+    public function getPromotion()
+    {
+        return $this->hasMany(Promotion::class, ['id' => 'master_id']);
+    }
+
+    public function getCustomShiftTemplates()
+    {
+        return $this->hasMany(CustomShiftTemplates::class, ['user_profile_id' => 'id']);
+    }
+
+
+
 
     /**
      * Альтернативный вариант с via()

@@ -2,6 +2,7 @@
 
 namespace common\models;
 
+use api\modules\v1\models\ServicesApp;
 use common\models\query\BookingQuery;
 use Yii;
 
@@ -16,6 +17,11 @@ use Yii;
  * @property int $status
  * @property string $created_at
  * @property string $updated_at
+ *
+ * @property Booking $client
+ * @property Booking $master
+ * @property Services $service
+ * @property WorkTimeShift $workTimeShift
  */
 class Booking extends \yii\db\ActiveRecord
 {
@@ -70,6 +76,28 @@ class Booking extends \yii\db\ActiveRecord
             'updated_at' => 'Updated At',
         ];
     }
+
+    public function getClient()
+    {
+        return $this->hasOne(UserProfile::class, ['id' => 'client_id']);
+    }
+
+    public function getMaster()
+    {
+        return $this->hasOne(UserProfile::class, ['id' => 'master_id']);
+    }
+
+    public function getService()
+    {
+        return $this->hasOne(Services::class, ['id' => 'service_id']);
+    }
+
+    public function getWorkTimeShift()
+    {
+        return $this->hasOne(WorkTimeShift::class, ['id' => 'work_time_shift_id']);
+    }
+
+
 
     /**
      * {@inheritdoc}

@@ -198,8 +198,8 @@ class MigrationController extends ActiveController
 
                     Yii::$app->db->createCommand()
                         ->insert('booking', [
-                            'client_id' => $UserProfileMaster->id,
-                            'master_id' => $UserProfileClient->id,
+                            'client_id' => $UserProfileClient->id,
+                            'master_id' => $UserProfileMaster->id,
                             'work_time_shift_id' => $workTimeShift->id,
                             'service_id' => $service->id,
                         ])->execute();

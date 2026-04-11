@@ -2,6 +2,7 @@
 
 namespace common\models;
 
+use api\modules\v1\models\UserProfileApp;
 use common\models\query\ReviewQuery;
 use Yii;
 
@@ -16,6 +17,9 @@ use Yii;
  * @property string|null $text
  * @property string $created_at
  * @property string $updated_at
+ *
+ * @property UserProfile $client
+ * @property UserProfile $master
  */
 class Review extends \yii\db\ActiveRecord
 {
@@ -37,7 +41,7 @@ class Review extends \yii\db\ActiveRecord
         return [
             [['text'], 'default', 'value' => null],
             [['rating'], 'default', 'value' => 0],
-            [['client_id', 'master_id'], 'required'],
+            [['client_id', 'master_id', 'rating'], 'required'],
             [['client_id', 'master_id', 'rating'], 'integer'],
             [['text', 'author_name'], 'string'],
             [['created_at', 'updated_at'], 'safe'],
@@ -51,7 +55,7 @@ class Review extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'client_id' => 'User ID',
+            'client_id' => 'Client ID',
             'master_id' => 'Master ID',
             'rating' => 'Rating',
             'text' => 'Text',
@@ -59,6 +63,16 @@ class Review extends \yii\db\ActiveRecord
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
         ];
+    }
+
+    public function getClient()
+    {
+        return $this->hasOne(UserProfile::class, ['id' => 'client_id']);
+    }
+
+    public function getMaster()
+    {
+        return $this->hasOne(UserProfile::class, ['id' => 'master_id']);
     }
 
     /**
