@@ -11,6 +11,7 @@ use backend\assets\AppAsset;
 use backend\controllers\ReviewController;
 use common\models\Booking;
 use common\models\CustomShiftTemplates;
+use common\models\Payment;
 use common\models\Promotion;
 use common\models\Review;
 use common\models\Services;
@@ -22,6 +23,7 @@ use common\models\WorkTimeShift;
 use DateTime;
 use Yii;
 use yii\rest\ActiveController;
+use YooKassa\Client;
 
 class FunctionsController extends ActiveController
 {
@@ -311,7 +313,6 @@ class FunctionsController extends ActiveController
 
     public function actionSubmitPromotion()
     {
-
         $params = Yii::$app->getRequest()->getBodyParams();
 
         $userId = $params['userId'] ?? null;
@@ -320,8 +321,11 @@ class FunctionsController extends ActiveController
         $validUntil = $params['validUntil'] ?? null;
         $phoneNumber = $params['phoneNumber'] ?? null;
         $conditions = $params['conditions'] ?? null;
-        $order = $params['order'] ?? 0;
         $imageUrl = $params['imageUrl'] ?? null;
+
+        $amount = $params['amount'] ?? null;
+
+        $durationDays = $params['durationDays'] ?? Promotion::DEFAULT_DURATION_DAYS;
 
         if ($Master = UserProfileApp::findOne(['id' => $userId])) {
 
@@ -334,17 +338,95 @@ class FunctionsController extends ActiveController
             $Promotion->validUntil = $validUntil;
             $Promotion->phoneNumber = $phoneNumber;
             $Promotion->conditions = $conditions;
-            $Promotion->order = $order;
+            $Promotion->durationDays = $durationDays;
 
 //            $Promotion->imageUrl = $imageUrl; // TODO: доделать загрузку картинок
 
             if ($Promotion->save()) {
-                return [
-                    "result" => [
-                        "success" => true,
-                        "reviewId" => $Promotion->id,
-                    ]
-                ];
+
+                if ($amount !== 0 && $amount !== '0') {
+
+                    $shopId = Yii::$app->params['shopId'];
+                    $secretKey = Yii::$app->params['secretKey'];
+
+                    $client = new Client();
+                    $client->setAuth($shopId, $secretKey);
+                    $idempotenceKey = uniqid('', true);
+
+                    if ($amount === null) {
+                        $amount = PromotionApp::DEFAULT_PRICE;
+                    }
+
+                    try {
+
+                        $response = $client->createPayment(
+                            array(
+                                'amount' => array(
+                                    'value' => $amount,
+                                    'currency' => 'RUB',
+                                ),
+                                'confirmation' => array(
+                                    'type' => 'redirect',
+                                    'return_url' => 'https://yookassa.ru',
+                                ),
+                                'capture' => true,
+                                'description' => $Promotion->title ?? 'Оплата размещения акции',
+                            ),
+                            $idempotenceKey
+                        );
+
+                        $yookassaPaymentId = $response->getId();
+                        $yookassaPaymentStatus = $response->getStatus();
+                        $confirmationUrl = $response->getConfirmation()->getConfirmationUrl();
+
+                        if ($yookassaPaymentId && $yookassaPaymentStatus && $confirmationUrl) {
+
+                            $Payment = new Payment();
+                            $Payment->promotion_id = $Promotion->id;
+                            $Payment->user_profile_id = $Master->id;
+                            $Payment->payment_id = $yookassaPaymentId;
+                            $Payment->confirmationUrl = $confirmationUrl;
+                            $Payment->status = Payment::getStatusViaValue($yookassaPaymentStatus);
+                            $Payment->amount = $amount;
+
+                            if ($Payment->save()) {
+                                return [
+                                    "result" => [
+                                        "success" => true,
+                                        "promotionId" => $Promotion->id,
+                                        "confirmationUrl" => $confirmationUrl,
+                                        "amount" => $amount,
+                                        "isPaid" => Promotion::ID_PAID_NO,
+                                    ]
+                                ];
+                            }
+
+                        }
+
+                    } catch (\Exception $e) {
+                        return [
+                            "code" => 141,
+                            "error" => "Ошибка создания промо акции",
+                        ];
+                    }
+                } else {
+
+                    $Promotion->isPaid = Promotion::ID_PAID_YES;
+                    $DTEndPromotion = new DateTime();
+                    $DTEndPromotion->modify('+' . $durationDays . ' day');
+                    $Promotion->publishedUntil = $DTEndPromotion->format('Y-m-d H:i:s');
+                    $Promotion->save(false);
+
+                    return [
+                        "result" => [
+                            "success" => true,
+                            "promotionId" => $Promotion->id,
+                            "confirmationUrl" => "",
+                            "amount" => $amount,
+                            "isPaid" => Promotion::ID_PAID_YES,
+                        ]
+                    ];
+                }
 
             }
 
@@ -376,7 +458,6 @@ class FunctionsController extends ActiveController
         $validUntil = $params['validUntil'] ?? null;
         $phoneNumber = $params['phoneNumber'] ?? null;
         $conditions = $params['conditions'] ?? null;
-        $order = $params['order'] ?? 0;
         $imageUrl = $params['imageUrl'] ?? null;
 
         $Master = UserProfileApp::findOne(['id' => $userId]);
@@ -398,7 +479,6 @@ class FunctionsController extends ActiveController
             $Promotion->validUntil = $validUntil;
             $Promotion->phoneNumber = $phoneNumber;
             $Promotion->conditions = $conditions;
-            $Promotion->order = $order;
 
 //            $Promotion->imageUrl = $imageUrl; // TODO: доделать загрузку картинок
 
@@ -1354,6 +1434,48 @@ class FunctionsController extends ActiveController
 
     public function actionCreateYookassaPayment()
     {
+
+//        $shopId = Yii::$app->params['shopId'];
+//        $secretKey = Yii::$app->params['secretKey'];
+//
+//        $client = new Client();
+//        $client->setAuth($shopId, $secretKey);
+//        $idempotenceKey = uniqid('', true);
+//        $response = $client->createPayment(
+//            array(
+//                'amount' => array(
+//                    'value' => 100000.0,
+//                    'currency' => 'RUB',
+//                ),
+//                'confirmation' => array(
+//                    'type' => 'redirect',
+//                    'return_url' => 'https://yookassa.ru',
+//                ),
+//                'capture' => true,
+//                'description' => 'Заказ №1', // Или такой текст = Оплата размещения акции
+//            ),
+//            $idempotenceKey
+//        );
+//
+//        var_dump($response->getId());
+//        var_dump($response->getStatus());
+//
+////
+//
+//        $confirmationUrl = $response->getConfirmation()->getConfirmationUrl();
+//        var_dump($confirmationUrl);
+//        var_dump($response);
+//        die;
+//
+//
+//        //получаем confirmationUrl для дальнейшего редиректа
+//        $confirmationUrl = $response->getConfirmation()->getConfirmationUrl();
+//
+//        var_dump($confirmationUrl);
+//
+//        die;
+
+
         return 'actionCreateYookassaPayment';
     }
 

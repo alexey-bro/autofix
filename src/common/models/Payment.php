@@ -2,6 +2,7 @@
 
 namespace common\models;
 
+use common\models\query\PaymentQuery;
 use Yii;
 
 /**
@@ -9,18 +10,28 @@ use Yii;
  *
  * @property int $id
  * @property int $promotion_id
- * @property int $userId
+ * @property int $user_profile_id
  * @property int $payment_id
  * @property float|null $amount
  * @property string $confirmationUrl
  * @property int $status
- * @property int $paid
  * @property string $created_at
  * @property string $updated_at
  */
 class Payment extends \yii\db\ActiveRecord
 {
 
+    /** Ожидает оплаты покупателем pending*/
+    public const int PENDING = 1;
+
+    /** Ожидает подтверждения магазином waiting_for_capture*/
+    public const int WAITING_FOR_CAPTURE = 2;
+
+    /** Успешно оплачен и подтвержден магазином succeeded*/
+    public const  int SUCCEEDED = 3;
+
+    /** Неуспех оплаты или отменен магазином canceled*/
+    public const int CANCELED = 4;
 
     /**
      * {@inheritdoc}
@@ -30,6 +41,8 @@ class Payment extends \yii\db\ActiveRecord
         return 'payment';
     }
 
+
+
     /**
      * {@inheritdoc}
      */
@@ -37,12 +50,21 @@ class Payment extends \yii\db\ActiveRecord
     {
         return [
             [['amount'], 'default', 'value' => 0.00],
-            [['paid'], 'default', 'value' => 0],
-            [['promotion_id', 'userId', 'payment_id', 'confirmationUrl'], 'required'],
-            [['promotion_id', 'userId', 'payment_id', 'status', 'paid'], 'integer'],
+            [['promotion_id', 'user_profile_id', 'payment_id', 'confirmationUrl'], 'required'],
+            [['promotion_id', 'user_profile_id', 'status'], 'integer'],
             [['amount'], 'number'],
             [['created_at', 'updated_at'], 'safe'],
-            [['confirmationUrl'], 'string', 'max' => 255],
+            [['confirmationUrl', 'payment_id'], 'string', 'max' => 255],
+        ];
+    }
+
+    public static function listStatus()
+    {
+        return [
+            self::PENDING => 'pending',
+            self::WAITING_FOR_CAPTURE => 'waiting_for_capture',
+            self::SUCCEEDED => 'succeeded',
+            self::CANCELED => 'canceled',
         ];
     }
 
@@ -54,15 +76,24 @@ class Payment extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'promotion_id' => 'Promotion ID',
-            'userId' => 'User ID',
+            'user_profile_id' => 'User Profile ID',
             'payment_id' => 'Payment ID',
             'amount' => 'Amount',
             'confirmationUrl' => 'Confirmation Url',
             'status' => 'Status',
-            'paid' => 'Paid',
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
         ];
+    }
+
+    public static function getStatusViaValue(string $value): int
+    {
+        $key = array_search($value, self::listStatus());
+        if ($key) {
+            return $key;
+        }
+
+        return self::PENDING;
     }
 
     /**

@@ -1,5 +1,7 @@
 <?php
 
+namespace console\migrations;
+
 use yii\db\Migration;
 
 class m260212_192054_init_db_autofix extends Migration

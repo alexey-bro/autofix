@@ -2,6 +2,8 @@
 
 namespace common\models\query;
 
+use common\models\Payment;
+
 /**
  * This is the ActiveQuery class for [[Payment]].
  *
