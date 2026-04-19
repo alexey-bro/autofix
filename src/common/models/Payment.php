@@ -12,7 +12,6 @@ use Yii;
  * @property int $promotion_id
  * @property int $user_profile_id
  * @property int $payment_id
- * @property float|null $amount
  * @property string $confirmationUrl
  * @property int $status
  * @property string $created_at
@@ -49,10 +48,8 @@ class Payment extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['amount'], 'default', 'value' => 0.00],
             [['promotion_id', 'user_profile_id', 'payment_id', 'confirmationUrl'], 'required'],
             [['promotion_id', 'user_profile_id', 'status'], 'integer'],
-            [['amount'], 'number'],
             [['created_at', 'updated_at'], 'safe'],
             [['confirmationUrl', 'payment_id'], 'string', 'max' => 255],
         ];
@@ -78,7 +75,6 @@ class Payment extends \yii\db\ActiveRecord
             'promotion_id' => 'Promotion ID',
             'user_profile_id' => 'User Profile ID',
             'payment_id' => 'Payment ID',
-            'amount' => 'Amount',
             'confirmationUrl' => 'Confirmation Url',
             'status' => 'Status',
             'created_at' => 'Created At',

@@ -339,6 +339,8 @@ class FunctionsController extends ActiveController
             $Promotion->phoneNumber = $phoneNumber;
             $Promotion->conditions = $conditions;
             $Promotion->durationDays = $durationDays;
+            $Promotion->amount = $amount;
+
 
 //            $Promotion->imageUrl = $imageUrl; // TODO: доделать загрузку картинок
 
@@ -387,9 +389,12 @@ class FunctionsController extends ActiveController
                             $Payment->payment_id = $yookassaPaymentId;
                             $Payment->confirmationUrl = $confirmationUrl;
                             $Payment->status = Payment::getStatusViaValue($yookassaPaymentStatus);
-                            $Payment->amount = $amount;
 
                             if ($Payment->save()) {
+
+                                $Promotion->payment_id = $Payment->id;
+                                $Promotion->save();
+
                                 return [
                                     "result" => [
                                         "success" => true,
@@ -414,7 +419,7 @@ class FunctionsController extends ActiveController
                     $Promotion->isPaid = Promotion::ID_PAID_YES;
                     $DTEndPromotion = new DateTime();
                     $DTEndPromotion->modify('+' . $durationDays . ' day');
-                    $Promotion->publishedUntil = $DTEndPromotion->format('Y-m-d H:i:s');
+                    $Promotion->publishedUntil = $DTEndPromotion->format('Y-m-d H:i:s'); // TODO: сделать дату окончанием дня 23.59.59 часов
                     $Promotion->save(false);
 
                     return [
@@ -443,8 +448,6 @@ class FunctionsController extends ActiveController
         ];
 
     }
-
-
 
     public function actionUpdatePromotion()
     {
@@ -505,6 +508,224 @@ class FunctionsController extends ActiveController
         ];
 
     }
+
+    public function actionPaymentPromotion()
+    {
+
+
+//        $shopId = Yii::$app->params['shopId'];
+//        $secretKey = Yii::$app->params['secretKey'];
+//
+//        $client = new \YooKassa\Client();
+//        $client->setAuth($shopId, $secretKey);
+//
+//        try {
+//            $response = $client->getPaymentInfo("3173eebe-000f-5000-b000-1f7ebd3e624e");
+//        } catch (\Exception $e) {
+//            $response = $e;
+//        }
+//
+//        // Получить JSON представление платежа
+//        $jsonString = $response->jsonSerialize();
+//        var_dump($jsonString);
+//        die;
+
+        $params = Yii::$app->getRequest()->getBodyParams();
+
+        $promotionId = $params['promotionId'] ?? null;
+        $userId = $params['userId'] ?? null;
+
+        $Master = UserProfileApp::findOne(['id' => $userId]);
+        $Promotion = Promotion::findOne(['id' => $promotionId]);
+
+        if ($Master && $Promotion) {
+
+            if ($Master->id != $Promotion->master_id) {
+
+                return [
+                    "code" => 141,
+                    "error" => "Ошибка доступа",
+                ];
+            }
+
+            $Payment = $Promotion->payment;
+
+            if ($Promotion->isPaid) {
+                return [
+                    "code" => 141,
+                    "error" => "Акция уже оплачена",
+                ];
+            }
+
+            if ($Promotion->amount > 0 && $Payment && in_array($Payment->status, [Payment::PENDING, Payment::CANCELED])) {
+
+                $shopId = Yii::$app->params['shopId'];
+                $secretKey = Yii::$app->params['secretKey'];
+
+                $client = new \YooKassa\Client();
+                $client->setAuth($shopId, $secretKey);
+
+                $paymentId = $Payment->payment_id;
+                try {
+                    $response = $client->getPaymentInfo($paymentId);
+
+                    $statusPayment = $response->getStatus();
+
+                    if ($statusPayment == Payment::listStatus()[Payment::PENDING]) {
+                        return [
+                            'result' => [
+                                'payment' => $Payment->confirmationUrl,
+                            ]
+                        ];
+                    } elseif ($statusPayment == Payment::listStatus()[Payment::CANCELED]) {
+
+                        $idempotenceKey = uniqid('', true);
+                        $response = $client->createPayment(
+                            array(
+                                'amount' => array(
+                                    'value' => $Promotion->amount,
+                                    'currency' => 'RUB',
+                                ),
+                                'confirmation' => array(
+                                    'type' => 'redirect',
+                                    'return_url' => 'https://yookassa.ru',
+                                ),
+                                'capture' => true,
+                                'description' => $Promotion->title ?? 'Оплата размещения акции',
+                            ),
+                            $idempotenceKey
+                        );
+
+                        $yookassaPaymentId = $response->getId();
+                        $yookassaPaymentStatus = $response->getStatus();
+                        $confirmationUrl = $response->getConfirmation()->getConfirmationUrl();
+
+                        if ($yookassaPaymentId && $yookassaPaymentStatus && $confirmationUrl) {
+
+                            //TODO: протестировать все это
+                            //написать тесты апи
+
+                            //все предидущие пайменты поменять статус на canceled
+                            $allPaymentPromotion = Payment::find()->where(['promotion_id' => $Promotion->id])->all();
+                            foreach ($allPaymentPromotion as $_payment) {
+                                $_payment->status = Payment::CANCELED;
+                                $_payment->save();
+                            }
+
+                            $Payment = new Payment();
+                            $Payment->promotion_id = $Promotion->id;
+                            $Payment->user_profile_id = $Master->id;
+                            $Payment->payment_id = $yookassaPaymentId;
+                            $Payment->confirmationUrl = $confirmationUrl;
+                            $Payment->status = Payment::getStatusViaValue($yookassaPaymentStatus);
+
+                            if ($Payment->save()) {
+
+                                $Promotion->payment_id = $Payment->id;
+                                $Promotion->save(false);
+
+                                return [
+                                    'result' => [
+                                        'payment' => $Payment->confirmationUrl,
+                                    ]
+                                ];
+                            }
+                        }
+
+                    } elseif ($statusPayment == Payment::listStatus()[Payment::WAITING_FOR_CAPTURE]) {
+                        return [
+                            "code" => 141,
+                            "error" => "Платеж в обработке",
+                        ];
+                    } elseif ($statusPayment == Payment::listStatus()[Payment::SUCCEEDED]) {
+                        $Payment->status = Payment::SUCCEEDED;
+                        $Payment->save();
+                        $Promotion->payment_id = Promotion::ID_PAID_YES;
+                        $Promotion->save();
+
+                        if ($Payment->save() && $Promotion->save()) {
+                            return [
+                                "code" => 141,
+                                "error" => "Акция оплачена",
+                            ];
+                        }
+
+                    }
+
+                    //TODO: дописать если у плвтежа статус оплачен
+
+//                    var_dump($response->getStatus());
+
+                } catch (\Exception $e) {
+                    return [
+                        "code" => 141,
+                        "error" => "Ошибка",
+                    ];
+                }
+
+//                die;
+//
+////                var_dump($response->getPaid());
+////                var_dump($response->getCreatedAt());
+//                var_dump($response->getExpiresAt());
+//
+//                die;
+//                // Получить JSON представление платежа
+//                $jsonString = $response->jsonSerialize();
+//                var_dump($jsonString);
+//                die;
+//
+//                $prettyJson = json_encode($jsonString, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+//                var_dump($prettyJson);
+//                die;
+//
+//
+//                echo "=== Полный ответ в JSON ===\n";
+//                echo $prettyJson . "\n";
+//
+//// Или более короткий вариант напрямую
+//                echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+//
+//
+//                die;
+
+
+
+
+
+                // TODO: добавить ссылку из проиотион на паймент модель
+                // TODO: добавить ссылку из паймента на промотин
+
+                //amount у промотион должен быть
+                //Создается новая оплата
+                // если промотион не оплачен
+                // если у него статус пендинг (проверить информацию о текущем платеже)
+                // проверить сколько времени осталось у текущего платежа
+                // после отплаты выставить статус оплачено и дату истечения
+
+//                return [
+//                    "result" => [
+//                        "success" => true,
+//                    ]
+//                ];
+
+            } else {
+                return [
+                    "code" => 141,
+                    "error" => "Ошибка создания платежа",
+                ];
+            }
+
+        } else {
+            return [
+                "code" => 141,
+                "error" => "Промоакция или пользователь не найдены",
+            ];
+        }
+
+    }
+
+    // TODO: webhook для проверки оплаты и измененя статуса платежа
 
     public function actionDeletePromotion()
     {

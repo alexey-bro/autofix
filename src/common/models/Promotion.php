@@ -15,11 +15,15 @@ use Yii;
  * @property string|null $phoneNumber
  * @property string|null $conditions
  * @property int|null $master_id
+ * @property int|null $payment_id
  * @property int|null $isPaid
+ * @property float|null $amount
  * @property int|null $durationDays
  * @property string|null $publishedUntil
  * @property string $created_at
  * @property string $updated_at
+ *
+ * @property Payment $payment
  */
 class Promotion extends \yii\db\ActiveRecord
 {
@@ -45,8 +49,9 @@ class Promotion extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['validUntil', 'phoneNumber', 'conditions', 'master_id', 'publishedUntil'], 'default', 'value' => null],
+            [['validUntil', 'phoneNumber', 'conditions', 'master_id', 'publishedUntil', 'payment_id'], 'default', 'value' => null],
             [['isPaid'], 'default', 'value' => 0],
+            [['amount'], 'default', 'value' => 0.00],
             [['durationDays'], 'default', 'value' => self::DEFAULT_DURATION_DAYS],
             [['title', 'description'], 'required'],
             [['validUntil', 'publishedUntil', 'created_at', 'updated_at'], 'safe'],
@@ -69,12 +74,21 @@ class Promotion extends \yii\db\ActiveRecord
             'conditions' => 'Conditions',
             'master_id' => 'Master ID',
             'isPaid' => 'Is Paid',
+            'amount' => 'Amount',
+            'payment_id' => 'Payment ID',
             'durationDays' => 'Duration Days',
             'publishedUntil' => 'Published Until',
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
         ];
     }
+
+
+    public function getPayment()
+    {
+        return $this->hasOne(Payment::class, ['id' => 'payment_id']);
+    }
+
 
     /**
      * {@inheritdoc}
