@@ -1,0 +1,23 @@
+actor: ApiTester
+suite_namespace: Tests\Api
+#params:
+#  - ../.env
+params:
+    - /var/www/html/api/config/test-local.php
+modules:
+    # enable helpers as array
+    enabled:
+        - REST:
+#            url: $API_URL  # твой базовый URL
+            url: http://autofix_yii2_nginx/v1/  # твой базовый URL
+            depends: PhpBrowser
+            part: Json
+        - PhpBrowser:
+#            url: $API_URL
+            url: http://autofix_yii2_nginx/v1/
+            headers:
+                Host: api.autofix.loc
+
+    config:
+        REST:
+            timeout: 30

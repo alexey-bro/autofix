@@ -3,7 +3,10 @@ include:
     - common
     - frontend
     - backend
+    - api
 paths:
     output: console/runtime/output
 settings:
-    colors: true
+    shuffle: false
+    lint: true
+#    error_level: "E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED"
