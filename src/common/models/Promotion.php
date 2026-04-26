@@ -24,6 +24,7 @@ use Yii;
  * @property string $updated_at
  *
  * @property Payment $payment
+ * @property File $photo
  */
 class Promotion extends \yii\db\ActiveRecord
 {
@@ -87,6 +88,15 @@ class Promotion extends \yii\db\ActiveRecord
     public function getPayment()
     {
         return $this->hasOne(Payment::class, ['id' => 'payment_id']);
+    }
+
+    public function getPhoto() : \yii\db\ActiveQuery
+    {
+        return $this->hasMany(File::class, ['entity_id' => 'id'])
+            ->onCondition([
+                'files.type' => File::TYPE_PROMOTION,
+                'files.sub_type' => File::SUB_TYPE_PROMOTION,
+            ]);
     }
 
 

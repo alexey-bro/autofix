@@ -73,6 +73,15 @@ class Services extends \yii\db\ActiveRecord
         return $this->hasOne(Specializations::class, ['id' => 'specialization_id']);
     }
 
+    public function getPhoto() : \yii\db\ActiveQuery
+    {
+        return $this->hasMany(File::class, ['entity_id' => 'id'])
+            ->onCondition([
+                'files.type' => File::TYPE_SERVICE,
+                'files.sub_type' => File::SUB_TYPE_SERVICE,
+            ]);
+    }
+
     /**
      * {@inheritdoc}
      * @return ServicesQuery the active query used by this AR class.

@@ -5,12 +5,14 @@ namespace api\modules\v1\controllers;
 use api\modules\v1\models\BookingApp;
 use api\modules\v1\models\PromotionApp;
 use api\modules\v1\models\ReviewApp;
+use api\modules\v1\models\ServicesApp;
 use api\modules\v1\models\UserProfileApp;
 use api\modules\v1\models\WorkDaysShiftApp;
 use backend\assets\AppAsset;
 use backend\controllers\ReviewController;
 use common\models\Booking;
 use common\models\CustomShiftTemplates;
+use common\models\File;
 use common\models\Payment;
 use common\models\Promotion;
 use common\models\Review;
@@ -23,6 +25,7 @@ use common\models\WorkTimeShift;
 use DateTime;
 use Yii;
 use yii\rest\ActiveController;
+use yii\web\UploadedFile;
 use YooKassa\Client;
 
 class FunctionsController extends ActiveController
@@ -1650,6 +1653,148 @@ class FunctionsController extends ActiveController
         return [
             "result" => $Master,
         ];
+    }
+
+    public function actionSetUserPhoto($user_profile_id)
+    {
+        $UserProfile = UserProfileApp::findOne($user_profile_id);
+
+        if (!$UserProfile) {
+            return [
+                "code" => 141,
+                "error" => "Пользователь не найден",
+            ];
+        }
+
+        $photo = UploadedFile::getInstanceByName('photo');
+
+        if ($photo) {
+
+            $File = new File();
+            $File->loadFile($photo);
+            $File->setType(File::TYPE_AVATAR);
+            $File->setSubType(File::SUB_TYPE_AVATAR);
+            $File->setUserId($UserProfile->id);
+            $File->setEntityId($UserProfile->id);
+            $File->saveFile();
+
+            return [
+                "result" => $UserProfile,
+            ];
+
+        }
+
+        return [
+            "code" => 141,
+            "error" => "Загрузите фото",
+        ];
+    }
+
+    public function actionSetPromotionPhoto($promotion_id)
+    {
+        $Promotion = PromotionApp::findOne($promotion_id);
+
+        if (!$Promotion) {
+            return [
+                "code" => 141,
+                "error" => "Промо акция не найдена",
+            ];
+        }
+
+        $listPhoto = UploadedFile::getInstancesByName('photo');
+        $countFilesNeedLoad = count($listPhoto);
+        $countFilesLoaded = 0;
+
+        if ($listPhoto) {
+            foreach ($listPhoto as $photo) {
+                $File = new File();
+                $File->loadFile($photo);
+                $File->setType(File::TYPE_PROMOTION);
+                $File->setSubType(File::SUB_TYPE_PROMOTION);
+                $File->setUserId($Promotion->master_id);
+                $File->setEntityId($Promotion->id);
+                $File->saveFile();
+                $countFilesLoaded++;
+            }
+
+            if ($countFilesLoaded == 0) {
+                return [
+                    "code" => 141,
+                    "error" => "Ошибка загрузки файлов",
+                ];
+            }
+
+            if ($countFilesNeedLoad != $countFilesLoaded) {
+                return [
+                    "result" => $Promotion,
+                    "error" => "Не все файлы были загружены",
+                ];
+            } else {
+                return [
+                    "result" => $Promotion,
+                ];
+            }
+        }
+
+        return [
+            "code" => 141,
+            "error" => "Загрузите фото",
+        ];
+    }
+
+    public function actionSetServicePhoto($service_id)
+    {
+
+        $Service = ServicesApp::findOne($service_id);
+
+        if (!$Service) {
+            return [
+                "code" => 141,
+                "error" => "Услуга не найдена",
+            ];
+        }
+
+        $listPhoto = UploadedFile::getInstancesByName('photo');
+
+        $countFilesNeedLoad = count($listPhoto);
+        $countFilesLoaded = 0;
+
+        if ($listPhoto) {
+            foreach ($listPhoto as $photo) {
+                $File = new File();
+                $File->loadFile($photo);
+                $File->setType(File::TYPE_SERVICE);
+                $File->setSubType(File::SUB_TYPE_SERVICE);
+                $File->setUserId($Service->user_profile_id);
+                $File->setEntityId($Service->id);
+                $File->saveFile();
+                $countFilesLoaded++;
+            }
+
+            if ($countFilesLoaded == 0) {
+                return [
+                    "code" => 141,
+                    "error" => "Ошибка загрузки файлов",
+                ];
+            }
+
+            if ($countFilesNeedLoad != $countFilesLoaded) {
+                return [
+                    "result" => $Service,
+                    "error" => "Не все файлы были загружены",
+                ];
+            } else {
+                return [
+                    "result" => $Service,
+                ];
+            }
+        }
+
+        return [
+            "code" => 141,
+            "error" => "Загрузите фото",
+        ];
+
     }
 
 

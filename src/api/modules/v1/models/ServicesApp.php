@@ -34,7 +34,15 @@ class ServicesApp extends Services
             return (int) $model->price_to;
         };
 
-        $fields['photos'] = 'photos';
+        $fields['photos'] = function () {
+            $responsePhotoUrl = [];
+            if ($this->photo && is_iterable($this->photo)) {
+                foreach ($this->photo as $photo) {
+                    $responsePhotoUrl[] = $photo->getUrl();
+                }
+            }
+            return $responsePhotoUrl;
+        };
 
         return $fields;
     }

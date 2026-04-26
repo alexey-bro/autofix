@@ -14,7 +14,9 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     librabbitmq-dev \
     libssh-dev \
-    libicu-dev
+    libicu-dev \
+    libmagickwand-dev \
+    imagemagick
 
 # Очистка кеша
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -31,6 +33,8 @@ RUN if [ "$PHP_XDEBUG" = "yes" ]; then \
     else \
         echo "Xdebug disabled"; \
     fi
+
+RUN pecl install imagick && docker-php-ext-enable imagick
 
 # Добавим свой php.ini, можем в нем определять свои значения конфига
 ADD php.ini /usr/local/etc/php/conf.d/40-custom.ini

@@ -29,13 +29,24 @@ class PromotionApp extends Promotion
         $fields['description'] = 'description';
         $fields['validUntil'] = 'validUntil';
         $fields['publishedUntil'] = function($model) {
-            $date = new DateTime($this->publishedUntil, new DateTimeZone('UTC'));
-            return $date->format('Y-m-d\TH:i:s.v\Z');
+            if ($this->publishedUntil) {
+                $date = new DateTime($this->publishedUntil, new DateTimeZone('UTC'));
+                return $date->format('Y-m-d\TH:i:s.v\Z');
+            }
+            return null;
         };
 
         $fields['phoneNumber'] = 'phoneNumber';
         $fields['conditions'] = 'conditions';
-        $fields['imageUrl'] = 'imageUrl'; // TODO этого нет
+        $fields['imageUrl'] = function () {
+            $responsePhotoUrl = [];
+            if ($this->photo && is_iterable($this->photo)) {
+                foreach ($this->photo as $photo) {
+                    $responsePhotoUrl[] = $photo->getUrl();
+                }
+            }
+            return $responsePhotoUrl;
+        };
 
         $fields['createdByMasterId'] = 'master_id';
         $fields['master_id'] = 'master_id';

@@ -35,6 +35,7 @@ namespace common\models;
  * @property Booking $bookingClient
  * @property Booking $bookingMaster
  * @property Promotion $promotion
+ * @property File $photo
  */
 class UserProfile extends \yii\db\ActiveRecord
 {
@@ -199,6 +200,15 @@ class UserProfile extends \yii\db\ActiveRecord
     public function getCustomShiftTemplates()
     {
         return $this->hasMany(CustomShiftTemplates::class, ['user_profile_id' => 'id']);
+    }
+
+    public function getPhoto() : \yii\db\ActiveQuery
+    {
+        return $this->hasOne(File::class, ['entity_id' => 'id'])
+            ->onCondition([
+                'files.type' => File::TYPE_AVATAR,
+                'files.sub_type' => File::SUB_TYPE_AVATAR
+            ]);
     }
 
 

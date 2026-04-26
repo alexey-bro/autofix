@@ -129,6 +129,12 @@ class UserProfileApp extends UserProfile
                 $fields['workShifts'] = 'workDaysShift';
                 $fields['customShiftTemplates'] = 'customShiftTemplatesApp';
                 $fields['services'] = 'servicesApp';
+                $fields['photoUrl'] = function () {
+                    if ($this->photo) {
+                        return $this->photo->getUrl();
+                    }
+                    return '';
+                };
         }
 
 
