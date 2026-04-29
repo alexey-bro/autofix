@@ -80,7 +80,7 @@ class WorkTimeShift extends \yii\db\ActiveRecord
      */
     public function getUserProfile()
     {
-        return $this->hasOne(UserProfile::class, ['id' => 'user_profile_id'])
+        return $this->hasOne(UserProfile::class, ['id' => 'user_id'])
             ->via('workDaysShift');
     }
 

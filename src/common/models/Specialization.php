@@ -9,7 +9,7 @@ use Yii;
  * This is the model class for table "specialization".
  *
  * @property int $id
- * @property int $user_profile_id
+ * @property int $user_id
  * @property int $specialization_id
  */
 class Specialization extends \yii\db\ActiveRecord
@@ -31,8 +31,8 @@ class Specialization extends \yii\db\ActiveRecord
     {
         return [
             [['specialization_id'], 'default', 'value' => 0],
-            [['user_profile_id'], 'required'],
-            [['user_profile_id', 'specialization_id'], 'integer'],
+            [['user_id'], 'required'],
+            [['user_id', 'specialization_id'], 'integer'],
         ];
     }
 
@@ -43,7 +43,7 @@ class Specialization extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'user_profile_id' => 'User ID',
+            'user_id' => 'User ID',
             'specialization_id' => 'Specialization ID',
         ];
     }
@@ -53,7 +53,7 @@ class Specialization extends \yii\db\ActiveRecord
      */
     public function getUserProfile()
     {
-        return $this->hasOne(UserProfile::class, ['id' => 'user_profile_id']);
+        return $this->hasOne(UserProfile::class, ['id' => 'user_id']);
     }
 
 

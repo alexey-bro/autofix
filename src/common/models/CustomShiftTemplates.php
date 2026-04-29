@@ -8,7 +8,7 @@ use Yii;
  * This is the model class for table "custom_shift_templates".
  *
  * @property int $id
- * @property int $user_profile_id
+ * @property int $user_id
  * @property string $template
  * @property string $created_at
  * @property string $updated_at
@@ -31,8 +31,8 @@ class CustomShiftTemplates extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['user_profile_id', 'template'], 'required'],
-            [['user_profile_id'], 'integer'],
+            [['user_id', 'template'], 'required'],
+            [['user_id'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
             [['template'], 'string', 'max' => 255],
         ];
@@ -45,7 +45,7 @@ class CustomShiftTemplates extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'user_profile_id' => 'User Profile ID',
+            'user_id' => 'User Profile ID',
             'template' => 'Template',
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',

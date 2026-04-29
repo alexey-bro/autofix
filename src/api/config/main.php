@@ -24,6 +24,8 @@ return [
         'request' => [
             'csrfParam' => '_csrf-api',
             'enableCsrfValidation' => false,
+//            'cookieValidationKey' => 'sdfsdfsdgfsdgKBkbkKJlhbnjHKBhkjlb687t5^FG^&&',
+            'enableCookieValidation' => false,
             'parsers' => [
                 'application/json' => JsonParser::class,
             ],
@@ -34,6 +36,7 @@ return [
         ],
         'user' => [
             'identityClass' => 'common\models\User',
+//            'identityClass' => 'api\modules\v1\models\UserApp',
             'enableAutoLogin' => false,
             'identityCookie' => ['name' => '_identity-api', 'httpOnly' => true],
             'enableSession' => false, // API не использует сессии

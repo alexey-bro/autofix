@@ -10,7 +10,7 @@ use Yii;
  *
  * @property int $id
  * @property int $promotion_id
- * @property int $user_profile_id
+ * @property int $user_id
  * @property int $payment_id
  * @property string $confirmationUrl
  * @property int $status
@@ -48,8 +48,8 @@ class Payment extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['promotion_id', 'user_profile_id', 'payment_id', 'confirmationUrl'], 'required'],
-            [['promotion_id', 'user_profile_id', 'status'], 'integer'],
+            [['promotion_id', 'user_id', 'payment_id', 'confirmationUrl'], 'required'],
+            [['promotion_id', 'user_id', 'status'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
             [['confirmationUrl', 'payment_id'], 'string', 'max' => 255],
         ];
@@ -73,7 +73,7 @@ class Payment extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'promotion_id' => 'Promotion ID',
-            'user_profile_id' => 'User Profile ID',
+            'user_id' => 'User Profile ID',
             'payment_id' => 'Payment ID',
             'confirmationUrl' => 'Confirmation Url',
             'status' => 'Status',

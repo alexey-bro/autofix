@@ -69,8 +69,8 @@ class Booking extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'client_id' => 'Client ID',
-            'master_id' => 'Master ID',
+            'client_id' => 'ClientApp ID',
+            'master_id' => 'MasterApp ID',
             'work_time_shift_id' => 'Work time shift id',
             'service_id' => 'Service ID',
             'status' => 'Status',
@@ -81,12 +81,12 @@ class Booking extends \yii\db\ActiveRecord
 
     public function getClient(): \yii\db\ActiveQuery
     {
-        return $this->hasOne(UserProfile::class, ['id' => 'client_id']);
+        return $this->hasOne(User::class, ['id' => 'client_id']);
     }
 
     public function getMaster(): \yii\db\ActiveQuery
     {
-        return $this->hasOne(UserProfile::class, ['id' => 'master_id']);
+        return $this->hasOne(User::class, ['id' => 'master_id']);
     }
 
     public function getService(): \yii\db\ActiveQuery

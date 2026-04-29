@@ -3,10 +3,17 @@
 namespace api\modules\v1\models;
 
 use common\models\Booking;
-use common\models\UserProfile;
 use DateTime;
 use DateTimeZone;
 
+
+
+/**
+ * This is the model class for table "booking".
+ *
+ * @property UserApp $masterApp
+ * @property UserApp $clientApp
+ */
 class BookingApp extends Booking
 {
 
@@ -73,7 +80,7 @@ class BookingApp extends Booking
 
         //TODO: это ерунда, надо переделать на extended поля (master и client)
         $fields['master'] = function($model) {
-            $Master = $this->master;
+            $Master = $this->masterApp;
 
             if ($Master) {
                 $Master->scenario = UserProfileApp::SCENARIO_BOOKING_MASTER;
@@ -84,7 +91,7 @@ class BookingApp extends Booking
         };
 
         $fields['client'] = function($model) {
-            $Client = $this->client;
+            $Client = $this->clientApp;
 
             if ($Client) {
                 $Client->scenario = UserProfileApp::SCENARIO_BOOKING_CLIENT;
@@ -101,14 +108,14 @@ class BookingApp extends Booking
         return $fields;
     }
 
-    public function getClient()
+    public function getClientApp()
     {
-        return $this->hasOne(UserProfileApp::class, ['id' => 'client_id']);
+        return $this->hasOne(ClientApp::class, ['id' => 'client_id']);
     }
 
-    public function getMaster()
+    public function getMasterApp()
     {
-        return $this->hasOne(UserProfileApp::class, ['id' => 'master_id']);
+        return $this->hasOne(MasterApp::class, ['id' => 'master_id']);
     }
 
     /**

@@ -1,8 +1,36 @@
 <?php
 
+
+use yii\rest\UrlRule;
+
 $urlRulesV1 = require(__DIR__ . '/../modules/v1/config/url-manager.php');
 
 return array_merge(
+
+    [
+        // Авторизация
+        [
+            'class' => UrlRule::class,
+            'controller' => 'v1/auth',
+            'pluralize' => false,
+            'extraPatterns' => [
+                'POST login'      => 'login',
+                'POST signup'     => 'signup',
+                'POST logout'     => 'logout',
+                'POST logout-all' => 'logout-all',
+                'POST register'   => 'register',  // <- добавить
+                'GET  me'         => 'me',
+            ],
+        ],
+
+        // Ваши ресурсы
+//        [
+//            'class' => 'yii\rest\UrlRule',
+//            'controller' => 'user'
+//        ],
+    ],
+
+
     $urlRulesV1,
 //    [
 //        [

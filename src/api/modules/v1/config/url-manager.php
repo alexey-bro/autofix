@@ -8,7 +8,7 @@ return [
         'controller' => 'v1/functions',
         'pluralize' => false, //множественное число
         'extraPatterns' => [
-            'POST user/<user_profile_id:\d[\d,]*>/photo' => 'set-user-photo',
+            'POST user/photo' => 'set-user-photo',
         ],
     ],
 

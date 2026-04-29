@@ -16,18 +16,46 @@ use yii\web\IdentityInterface;
  * @property string $password_hash
  * @property string $password_reset_token
  * @property string $verification_token
- * @property string $email
+ * @property string|null $email
+ * @property string $phone
+ * @property int $role
  * @property string $auth_key
  * @property int $status
  * @property int $created_at
  * @property int $updated_at
  * @property string $password write-only password
+ *
+ * @property WorkDaysShift $workDaysShift
+ * @property WorkDaysShift $workDaysShifts
+ * @property WorkTimeShift $workTimeShifts
+ * @property Services $services
+ * @property Review $reviewClient
+ * @property Review $reviewMaster
+ * @property Booking $bookingClient
+ * @property Booking $bookingMaster
+ * @property Promotion $promotion
+ * @property UserProfile $userProfile
+ * @property File $photo
  */
 class User extends ActiveRecord implements IdentityInterface
 {
+
     public const STATUS_DELETED = 0;
     public const STATUS_INACTIVE = 9;
     public const STATUS_ACTIVE = 10;
+
+
+    public const ROLE_USER_CLIENT = 1;
+    public const ROLE_USER_MASTER = 2;
+
+    public static function listRoles()
+    {
+        return [
+            self::ROLE_USER_CLIENT => 'CLIENT',
+            self::ROLE_USER_MASTER => 'MASTER',
+        ];
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -54,6 +82,7 @@ class User extends ActiveRecord implements IdentityInterface
         return [
             ['status', 'default', 'value' => self::STATUS_INACTIVE],
             ['status', 'in', 'range' => [self::STATUS_ACTIVE, self::STATUS_INACTIVE, self::STATUS_DELETED]],
+            [['role'], 'integer'],
         ];
     }
 
@@ -65,12 +94,31 @@ class User extends ActiveRecord implements IdentityInterface
         return static::findOne(['id' => $id, 'status' => self::STATUS_ACTIVE]);
     }
 
+//    /**
+//     * {@inheritdoc}
+//     */
+//    public static function findIdentityByAccessToken($token, $type = null)
+//    {
+//        throw new NotSupportedException('"findIdentityByAccessToken" is not implemented.');
+//    }
+
     /**
-     * {@inheritdoc}
+     * Ищем пользователя по Bearer-токену через таблицу user_tokens
      */
-    public static function findIdentityByAccessToken($token, $type = null)
+    public static function findIdentityByAccessToken($token, $type = null): ?self
     {
-        throw new NotSupportedException('"findIdentityByAccessToken" is not implemented.');
+
+
+        $userToken = UserToken::findValid($token);
+
+        if (!$userToken) {
+            return null;
+        }
+
+        // Опционально: продлеваем токен при каждом запросе
+        // $userToken->refresh();
+
+        return static::findOne(['id' => $userToken->user_id, 'status' => self::STATUS_ACTIVE]);
     }
 
     /**
@@ -208,5 +256,121 @@ class User extends ActiveRecord implements IdentityInterface
     public function removePasswordResetToken()
     {
         $this->password_reset_token = null;
+    }
+
+    public function getUserProfile()
+    {
+        return $this->hasOne(UserProfile::class, ['user_id' => 'id']);
+    }
+
+
+    /**
+     * Альтернативный вариант с via()
+     */
+    public function getSpecializationsVia()
+    {
+        return $this->hasMany(Specializations::class, ['id' => 'specialization_id'])
+            ->via('specializationsRecords');
+    }
+
+    /**
+     * Прямая связь с промежуточной таблицей
+     */
+    public function getSpecializationsRecords()
+    {
+        return $this->hasMany(Specialization::class, ['user_id' => 'id']);
+    }
+
+
+    public function getWorkDaysShift()
+    {
+        return $this->hasMany(WorkDaysShift::class, ['user_id' => 'id']);
+    }
+
+    /**
+     * Связь с рабочими днями
+     */
+    public function getWorkDaysShifts()
+    {
+        return $this->hasMany(WorkDaysShift::class, ['user_id' => 'id']);
+    }
+
+    public function getServices()
+    {
+        return $this->hasMany(Services::class, ['user_id' => 'id']);
+    }
+
+    public function getReviewClient()
+    {
+        return $this->hasMany(Review::class, ['id' => 'client_id']);
+    }
+
+    public function getReviewMaster()
+    {
+        return $this->hasMany(Review::class, ['id' => 'master_id']);
+    }
+
+    public function getBookingClient()
+    {
+        return $this->hasMany(Booking::class, ['id' => 'master_id']);
+    }
+
+    public function getBookingMaster()
+    {
+        return $this->hasMany(Booking::class, ['id' => 'client_id']);
+    }
+
+    public function getPromotion()
+    {
+        return $this->hasMany(Promotion::class, ['id' => 'master_id']);
+    }
+
+    public function getCustomShiftTemplates()
+    {
+        return $this->hasMany(CustomShiftTemplates::class, ['user_id' => 'id']);
+    }
+
+    /**
+     * Основная связь: пользователь имеет много категорий через промежуточную таблицу
+     */
+    public function getSpecializations()
+    {
+        return $this->hasMany(Specializations::class, ['id' => 'specialization_id'])
+            ->viaTable('specialization', ['user_id' => 'id']);
+    }
+
+    /**
+     * Связь со временем работы через рабочие дни
+     */
+    public function getWorkTimeShifts()
+    {
+        return $this->hasMany(WorkTimeShift::class, ['work_days_shift_id' => 'id'])
+            ->via('workDaysShifts');
+    }
+
+    /**
+     * Получить слот по дате и времени
+     */
+    public function getWorkTimeShiftByDateTime(\DateTime $DTStart, \DateTime $DTStop): null|WorkTimeShift
+    {
+        $date = $DTStart->format('Y-m-d');
+        $startTime = $DTStart->format('H:i:s');
+        $stopTime = $DTStop->format('H:i:s');
+
+        return $this->getWorkTimeShifts()
+            ->joinWith('workDaysShift')
+            ->andWhere(['work_days_shift.day' => $date])
+            ->andWhere(['work_time_shift.start' => $startTime])
+            ->andWhere(['work_time_shift.stop' => $stopTime])
+            ->one();
+    }
+
+    public function getPhoto() : \yii\db\ActiveQuery
+    {
+        return $this->hasOne(File::class, ['entity_id' => 'id'])
+            ->onCondition([
+                'files.type' => File::TYPE_AVATAR,
+                'files.sub_type' => File::SUB_TYPE_AVATAR
+            ]);
     }
 }

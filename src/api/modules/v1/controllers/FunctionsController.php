@@ -6,6 +6,7 @@ use api\modules\v1\models\BookingApp;
 use api\modules\v1\models\PromotionApp;
 use api\modules\v1\models\ReviewApp;
 use api\modules\v1\models\ServicesApp;
+use api\modules\v1\models\UserApp;
 use api\modules\v1\models\UserProfileApp;
 use api\modules\v1\models\WorkDaysShiftApp;
 use backend\assets\AppAsset;
@@ -20,19 +21,36 @@ use common\models\Services;
 use common\models\Specialization;
 use common\models\Specializations;
 use common\models\UserProfile;
+use common\models\UserToken;
 use common\models\WorkDaysShift;
 use common\models\WorkTimeShift;
 use DateTime;
 use Yii;
+use yii\base\InvalidConfigException;
+use yii\filters\auth\HttpBearerAuth;
 use yii\rest\ActiveController;
+use yii\web\NotFoundHttpException;
+use yii\web\UnauthorizedHttpException;
 use yii\web\UploadedFile;
 use YooKassa\Client;
 
-class FunctionsController extends ActiveController
+class FunctionsController extends BaseController
 {
     //TODO: добавить во все экшены условия, чтобы без обязательных полей возвращались ошибки
 
     public $modelClass = 'common\models\User';
+
+    public function behaviors(): array
+    {
+        $behaviors = parent::behaviors();
+
+        $behaviors['authenticator'] = [
+            'class'  => HttpBearerAuth::class,
+            'except' => ['login-by-phone'], // эти экшены открытые
+        ];
+
+        return $behaviors;
+    }
 
     public function actionLoginByPhone()
     {
@@ -40,14 +58,35 @@ class FunctionsController extends ActiveController
         $params = Yii::$app->getRequest()->getBodyParams();
         $phone = $params['phone'] ?? null;
 
-        $UserProfile = UserProfileApp::find()
+        $User = UserApp::find()
             ->where(['phone' => $phone])
             ->one();
 
+        if ($User) {
+            // Удаляем просроченные токены
+            UserToken::deleteExpired($User->id);
 
-        return [
-            'result' => $UserProfile,
-        ];
+            // Генерируем новый токен
+            $UserToken = UserToken::generate($User->id);
+
+            return [
+                'result' => $User,
+                'auth' => [
+                    'token'      => $UserToken->token,
+                    'expired_at' => $UserToken->expired_at,
+                    'user'       => [
+                        'id'       => $User->id,
+                        'username' => $User->username,
+                        'email'    => $User->email,
+                    ],
+                ],
+            ];
+
+        } else {
+            throw new UnauthorizedHttpException('Ошибка авторизации');
+        }
+
+
 
 
 //        "result": {
@@ -70,11 +109,7 @@ class FunctionsController extends ActiveController
 
     public function actionGetAllUsers()
     {
-        $allUsers = UserProfileApp::find()
-//            ->where(['_user_id' => 'user_1763968323791'])
-            ->all();
-
-        //TODO: загрузка фоток, ответ фотками доделать, сделать, сейчас никаких файлов нет
+        $allUsers = UserApp::find()->all();
 
         return [
             'result' => $allUsers,
@@ -85,37 +120,33 @@ class FunctionsController extends ActiveController
 
     public function actionGetUserProfile()
     {
+        $User = UserApp::findOne(Yii::$app->user->id);
 
-        $params = Yii::$app->getRequest()->getBodyParams();
-        $userId = $params['userId'] ?? null;
-
-        if ($userId && ($userProfile = UserProfileApp::findOne(['id' => $userId]))) {
-
-            return [
-                'result' => $userProfile,
-            ];
-
-        }
+        return [
+            'result' => $User,
+        ];
 
         // TODO: добавить 404 еслм нет юзера
     }
 
+    /**
+     * @throws InvalidConfigException
+     * @throws NotFoundHttpException
+     */
     public function actionGetMasterById()
     {
-
-
         $params = Yii::$app->getRequest()->getBodyParams();
         $userId = $params['userId'] ?? null;
 
-        if ($userId && ($userProfile = UserProfileApp::findOne(['id' => $userId]))) {
+        if ($userId && ($User = UserApp::findOne(['id' => $userId]))) {
 
             return [
-                'result' => $userProfile,
+                'result' => $User,
             ];
 
+        } else {
+            throw new NotFoundHttpException('Пользователь не найден');
         }
-
-        // TODO: добавить 404 еслм нет юзера
 
     }
 
@@ -126,27 +157,25 @@ class FunctionsController extends ActiveController
         // TODO::booking->status поправить в миграции, он там вообще не учитывается
 
         $params = Yii::$app->getRequest()->getBodyParams();
-        $clientId = $params['clientId'] ?? null;
+
+        $Client = UserApp::findOne(Yii::$app->user->id);
 
         $response = [];
 
-        if ($clientId && ($Client = UserProfileApp::findOne(['id' => $clientId]))) {
+        if ($Client) {
 
             $listBooking = BookingApp::find()
-                ->where(['client_id' => $clientId])
+                ->where(['client_id' => $Client->id])
                 ->all();
 
 
             foreach ($listBooking as $Booking) {
-
-                // TODO: master->photoUrl, client->photoUrl пусто, сделать фотки
                 /** @var Booking $Booking */
                 $response[] = $Booking;
-
             }
 
         } else {
-            // TODO: добавить 404 еслм нет клиента
+            throw new NotFoundHttpException('Пользователь не найден');
         }
 
         return [
@@ -176,14 +205,13 @@ class FunctionsController extends ActiveController
 
                 $Booking->scenario = BookingApp::SCENARIO_BOOKING_MASTER;
 
-                // TODO: master->photoUrl, client->photoUrl пусто, сделать фотки
                 /** @var Booking $Booking */
                 $response[] = $Booking;
 
             }
 
         } else {
-            // TODO: добавить 404 еслм нет клиента
+            throw new NotFoundHttpException('Пользователь не найден');
         }
 
         return [
@@ -197,13 +225,14 @@ class FunctionsController extends ActiveController
         $params = Yii::$app->getRequest()->getBodyParams();
         $phoneNumber = $params['phoneNumber'] ?? null;
 
-        $ode = "123456"; // Пока заглушка
+        $code = "123456"; // Пока заглушка
 
 //        Здесь будет вызов SMS.ru / Twilio
 //        console.log(`Код для ${phoneNumber}: ${code}`);
 
         return [
             'result' => 'Код отправлен',
+            'code' => $code,
         ];
     }
 
@@ -222,7 +251,6 @@ class FunctionsController extends ActiveController
 
     public function actionGetReviewsForMaster()
     {
-
         $params = Yii::$app->getRequest()->getBodyParams();
         $masterId = $params['masterId'] ?? null;
 
@@ -240,14 +268,15 @@ class FunctionsController extends ActiveController
 
         $params = Yii::$app->getRequest()->getBodyParams();
 
+        $Client = UserApp::findOne(Yii::$app->user->id);
+
         $masterId = $params['masterId'] ?? null;
-        $authorId = $params['authorId'] ?? null;
         $authorName = $params['authorName'] ?? null;
         $rating = $params['rating'] ?? null;
         $text = $params['text'] ?? null;
         $title = $params['title'] ?? null; //TODO: хз зачем, его даже в базе нет
 
-        if (!$masterId || !$authorId || !$rating || !$text) {
+        if (!$masterId || !$Client || !$rating || !$text) {
             return [
                 "code" => 141,
                 "error" => "Недостаточно данных для отзыва",
@@ -261,7 +290,6 @@ class FunctionsController extends ActiveController
             ];
         }
 
-        $Client = UserProfileApp::findOne(['id' => $authorId]);
         $Master = UserProfileApp::findOne(['id' => $masterId]);
 
         if ($Client && $Master) {
@@ -318,19 +346,19 @@ class FunctionsController extends ActiveController
     {
         $params = Yii::$app->getRequest()->getBodyParams();
 
-        $userId = $params['userId'] ?? null;
+        $Master = UserApp::findOne(Yii::$app->user->id);
+
         $title = $params['title'] ?? null;
         $description = $params['description'] ?? null;
         $validUntil = $params['validUntil'] ?? null;
         $phoneNumber = $params['phoneNumber'] ?? null;
         $conditions = $params['conditions'] ?? null;
-        $imageUrl = $params['imageUrl'] ?? null;
 
         $amount = $params['amount'] ?? null;
 
         $durationDays = $params['durationDays'] ?? Promotion::DEFAULT_DURATION_DAYS;
 
-        if ($Master = UserProfileApp::findOne(['id' => $userId])) {
+        if ($Master) {
 
             $Promotion = new Promotion();
 
@@ -343,9 +371,6 @@ class FunctionsController extends ActiveController
             $Promotion->conditions = $conditions;
             $Promotion->durationDays = $durationDays;
             $Promotion->amount = $amount;
-
-
-//            $Promotion->imageUrl = $imageUrl; // TODO: доделать загрузку картинок
 
             if ($Promotion->save()) {
 
@@ -388,7 +413,7 @@ class FunctionsController extends ActiveController
 
                             $Payment = new Payment();
                             $Payment->promotion_id = $Promotion->id;
-                            $Payment->user_profile_id = $Master->id;
+                            $Payment->user_id = $Master->id;
                             $Payment->payment_id = $yookassaPaymentId;
                             $Payment->confirmationUrl = $confirmationUrl;
                             $Payment->status = Payment::getStatusViaValue($yookassaPaymentStatus);
@@ -439,10 +464,7 @@ class FunctionsController extends ActiveController
             }
 
         } else {
-            return [
-                "code" => 141,
-                "error" => "userId обязателен",
-            ];
+            throw new NotFoundHttpException('Пользователь не найден');
         }
 
         return [
@@ -457,8 +479,13 @@ class FunctionsController extends ActiveController
 
         $params = Yii::$app->getRequest()->getBodyParams();
 
+        $Master = UserApp::findOne(Yii::$app->user->id);
+
+        if (!$Master) {
+            throw new NotFoundHttpException('Пользователь не найден');
+        }
+
         $promotionId = $params['promotionId'] ?? null;
-        $userId = $params['userId'] ?? null;
         $title = $params['title'] ?? null;
         $description = $params['description'] ?? null;
         $validUntil = $params['validUntil'] ?? null;
@@ -466,19 +493,14 @@ class FunctionsController extends ActiveController
         $conditions = $params['conditions'] ?? null;
         $imageUrl = $params['imageUrl'] ?? null;
 
-        $Master = UserProfileApp::findOne(['id' => $userId]);
-        $Promotion = Promotion::findOne(['id' => $promotionId]);
+        $Promotion = Promotion::find()
+            ->where([
+                'id' => $promotionId,
+                'master_id' => $Master->id,
+            ])->one();
+
 
         if ($Master && $Promotion) {
-
-            if ($Master->id != $Promotion->master_id) {
-
-                return [
-                    "code" => 141,
-                    "error" => "Нет прав на редактирование",
-                ];
-            }
-
 
             $Promotion->title = $title;
             $Promotion->description = $description;
@@ -499,10 +521,7 @@ class FunctionsController extends ActiveController
             }
 
         } else {
-            return [
-                "code" => 141,
-                "error" => "Промоакция или пользователь не найдены",
-            ];
+            throw new NotFoundHttpException('Промоакция или пользователь не найдены');
         }
 
         return [
@@ -515,41 +534,17 @@ class FunctionsController extends ActiveController
     public function actionPaymentPromotion()
     {
 
-
-//        $shopId = Yii::$app->params['shopId'];
-//        $secretKey = Yii::$app->params['secretKey'];
-//
-//        $client = new \YooKassa\Client();
-//        $client->setAuth($shopId, $secretKey);
-//
-//        try {
-//            $response = $client->getPaymentInfo("3173eebe-000f-5000-b000-1f7ebd3e624e");
-//        } catch (\Exception $e) {
-//            $response = $e;
-//        }
-//
-//        // Получить JSON представление платежа
-//        $jsonString = $response->jsonSerialize();
-//        var_dump($jsonString);
-//        die;
-
         $params = Yii::$app->getRequest()->getBodyParams();
-
         $promotionId = $params['promotionId'] ?? null;
-        $userId = $params['userId'] ?? null;
+        $Master = UserApp::findOne(Yii::$app->user->id);
 
-        $Master = UserProfileApp::findOne(['id' => $userId]);
-        $Promotion = Promotion::findOne(['id' => $promotionId]);
+        $Promotion = Promotion::find()
+            ->where([
+                'id' => $promotionId,
+                'master_id' => $Master->id,
+            ])->one();
 
-        if ($Master && $Promotion) {
-
-            if ($Master->id != $Promotion->master_id) {
-
-                return [
-                    "code" => 141,
-                    "error" => "Ошибка доступа",
-                ];
-            }
+        if ($Promotion) {
 
             $Payment = $Promotion->payment;
 
@@ -617,7 +612,7 @@ class FunctionsController extends ActiveController
 
                             $Payment = new Payment();
                             $Payment->promotion_id = $Promotion->id;
-                            $Payment->user_profile_id = $Master->id;
+                            $Payment->user_id = $Master->id;
                             $Payment->payment_id = $yookassaPaymentId;
                             $Payment->confirmationUrl = $confirmationUrl;
                             $Payment->status = Payment::getStatusViaValue($yookassaPaymentStatus);
@@ -734,21 +729,17 @@ class FunctionsController extends ActiveController
     {
         $params = Yii::$app->getRequest()->getBodyParams();
 
+        $Master = UserApp::findOne(Yii::$app->user->id);
+
         $promotionId = $params['promotionId'] ?? null;
-        $userId = $params['userId'] ?? null;
 
-        $Master = UserProfileApp::findOne(['id' => $userId]);
-        $Promotion = Promotion::findOne(['id' => $promotionId]);
+        $Promotion = Promotion::find()
+            ->where([
+                'id' => $promotionId,
+                'master_id' => $Master->id,
+            ])->one();
 
-        if ($Master && $Promotion) {
-
-            if ($Master->id != $Promotion->master_id) {
-
-                return [
-                    "code" => 141,
-                    "error" => "Нет прав на удаление",
-                ];
-            }
+        if ($Promotion) {
 
             // TODO: Сделать мягкое удаление
 
@@ -762,33 +753,31 @@ class FunctionsController extends ActiveController
             }
 
         } else {
-            return [
-                "code" => 141,
-                "error" => "Промоакция или пользователь не найдены",
-            ];
+            throw new NotFoundHttpException('Промоакция или пользователь не найдены');
         }
 
         return [
             "code" => 141,
             "error" => "Ошибка",
         ];
-
     }
 
 
     // 1. Обновление базовых полей
     public function actionUpdateMasterBasic()
     {
+        $User = UserApp::findOne(Yii::$app->user->id);
 
         $params = Yii::$app->getRequest()->getBodyParams();
 
-        $userId = $params['userId'] ?? null;
         $city = $params['city'] ?? null;
         $companyName = $params['companyName'] ?? null;
         $experience = $params['experience'] ?? null; //стаж
         $specialization = $params['specialization'] ?? null;
 
-        if ($UserProfile = UserProfileApp::findOne(['id' => $userId])) {
+        if ($User) {
+
+            $UserProfile = $User->userProfile;
 
             $UserProfile->city = $city;
             $UserProfile->companyName = $companyName;
@@ -798,7 +787,7 @@ class FunctionsController extends ActiveController
 
                 //Удаляем старые специализации
                 $listSpecializationUserProfile = Specialization::find()
-                    ->where(['user_profile_id' => $UserProfile->id])
+                    ->where(['user_id' => $User->id])
                     ->all();
 
                 foreach ($listSpecializationUserProfile as $specializationUserProfile) {
@@ -815,7 +804,7 @@ class FunctionsController extends ActiveController
 
                         $Specialization = new Specialization();
                         $Specialization->specialization_id = $specObject->id;
-                        $Specialization->user_profile_id = $UserProfile->id;
+                        $Specialization->user_id = $User->id;
                         $Specialization->save();
 
                     }
@@ -826,17 +815,14 @@ class FunctionsController extends ActiveController
 
             if ($UserProfile->save()) {
                 return [
-                    "result" => $UserProfile
+                    "result" => $User
                 ];
 
             }
 
 
         } else {
-            return [
-                "code" => 141,
-                "error" => "Пользователь не найден",
-            ];
+            throw new NotFoundHttpException('Пользователь не найден');
 
         }
 
@@ -850,9 +836,10 @@ class FunctionsController extends ActiveController
     public function actionUpdateMasterRating()
     {
 
+        $User = UserApp::findOne(Yii::$app->user->id);
+
         $params = Yii::$app->getRequest()->getBodyParams();
 
-        $userId = $params['userId'] ?? null;
         $newRating = $params['newRating'] ?? null;
 
         if ($newRating < 1 || $newRating > 5) {
@@ -862,7 +849,7 @@ class FunctionsController extends ActiveController
             ];
         }
 
-        if ($UserProfile = UserProfileApp::findOne(['id' => $userId])) {
+        if ($User && ($UserProfile = $User->userProfile)) {
 
             $currentRating = $UserProfile->rating;
             $currentCount = $UserProfile->reviewsCount;
@@ -877,15 +864,12 @@ class FunctionsController extends ActiveController
 
             if ($UserProfile->save()) {
                 return [
-                    "result" => $UserProfile,
+                    "result" => $User,
                 ];
             }
 
         } else {
-            return [
-                "code" => 141,
-                "error" => "Пользователь не найден",
-            ];
+            throw new NotFoundHttpException('Пользователь не найден');
         }
 
         return [
@@ -897,14 +881,16 @@ class FunctionsController extends ActiveController
 
     public function actionUpdateUserProfile()
     {
+
         $params = Yii::$app->getRequest()->getBodyParams();
 
-        $userId = $params['userId'] ?? null;
+        $User = UserApp::findOne(Yii::$app->user->id);
+        $UserProfile = $User->userProfile;
 
         $firstName = $params['firstName'] ?? null;
         $lastName = $params['lastName'] ?? null;
         $city = $params['city'] ?? null;
-        $photoUrl = $params['photoUrl'] ?? null;
+//        $photoUrl = $params['photoUrl'] ?? null;
         $specialization = $params['specialization'] ?? null;
         $services = $params['services'] ?? null;
         $cars = $params['cars'] ?? null;
@@ -916,11 +902,12 @@ class FunctionsController extends ActiveController
         $phone = $params['phone'] ?? null;
         $customShiftTemplates = $params['customShiftTemplates'] ?? null;
         $workAddress = $params['workAddress'] ?? null;
+        $carBrand = $params['carBrand'] ?? null;
 
 
 
 
-        if ($UserProfile = UserProfileApp::findOne(['id' => $userId])) {
+        if ($User && $UserProfile) {
 
             if ($firstName) {
                 $UserProfile->firstName = $firstName;
@@ -934,17 +921,12 @@ class FunctionsController extends ActiveController
                 $UserProfile->city = $city;
             }
 
-            //TODO: доделать фотокарточки, загрузку фоток сделать
-//            if ($photoUrl) {
-//                $UserProfile->photoUrl = $photoUrl;
-//            }
-
             if ($specialization) {
                 //TODO: вынести сохранение специализации в отдельное место
 
                 //Удаляем старые специализации
                 $listSpecializationUserProfile = Specialization::find()
-                    ->where(['user_profile_id' => $UserProfile->id])
+                    ->where(['user_id' => $User->id])
                     ->all();
 
                 foreach ($listSpecializationUserProfile as $specializationUserProfile) {
@@ -961,7 +943,7 @@ class FunctionsController extends ActiveController
 
                         $Specialization = new Specialization();
                         $Specialization->specialization_id = $specObject->id;
-                        $Specialization->user_profile_id = $UserProfile->id;
+                        $Specialization->user_id = $User->id;
                         $Specialization->save();
 
                     }
@@ -973,7 +955,7 @@ class FunctionsController extends ActiveController
             if ($services) {
 
                 $listServices = Services::find()
-                    ->where(['user_profile_id' => $UserProfile->id])
+                    ->where(['user_id' => $User->id])
                     ->all();
 
                 foreach ($listServices as $Service) {
@@ -985,15 +967,13 @@ class FunctionsController extends ActiveController
                     if ($Specialization = Specializations::findOne(['name' => $service['category']])) {
 
                         $Service = new Services();
-                        $Service->user_profile_id = $UserProfile->id;
+                        $Service->user_id = $User->id;
                         $Service->specialization_id = $Specialization->id;
                         $Service->name = $service['name'];
                         $Service->description = $service['description'];
                         $Service->price_from = $service['priceFrom'];
                         $Service->price_to = $service['priceTo'] ?? null;
                         $Service->save();
-
-                        //TODO доделать сохранение фотографий
 
                     }
                 }
@@ -1004,18 +984,19 @@ class FunctionsController extends ActiveController
                 $carsString = serialize($cars);
                 $UserProfile->cars = $carsString;
             }
-//
+
+            //TODO: email должен меняться с подтверждением и проверкой на уникальность
             if ($email) {
-                $UserProfile->email = $email;
+                $User->email = $email;
             }
 
-//
+            if ($carBrand) {
+                $UserProfile->carBrand = $carBrand;
+            }
+
             if ($workShifts) {
-//                var_dump($workShifts);
-//                die;
 
-
-                $UserWorkShiftDays = WorkDaysShift::find()->where(['user_profile_id' => $UserProfile->id])->all();
+                $UserWorkShiftDays = WorkDaysShift::find()->where(['user_id' => $User->id])->all();
                 $UserWorkShiftTimes = [];
 
                 foreach ($UserWorkShiftDays as $UserWorkShiftDay) {
@@ -1037,7 +1018,7 @@ class FunctionsController extends ActiveController
                     if (isset($workShift['slots'])) {
 
                         $WorkDaysShift = new WorkDaysShift();
-                        $WorkDaysShift->user_profile_id = $UserProfile->id;
+                        $WorkDaysShift->user_id = $User->id;
                         $WorkDaysShift->day = $DTWorkShift->format('Y-m-d');
 
                         if ($WorkDaysShift->save()) {
@@ -1063,10 +1044,10 @@ class FunctionsController extends ActiveController
 
             }
 
-            if ($photos && is_iterable($photos)) {
-                $photosString = serialize($photos);
-                $UserProfile->photos = $photosString;
-            }
+//            if ($photos && is_iterable($photos)) {
+//                $photosString = serialize($photos);
+//                $UserProfile->photos = $photosString;
+//            }
 
             if ($companyName) {
                 $UserProfile->companyName = $companyName;
@@ -1076,8 +1057,9 @@ class FunctionsController extends ActiveController
                 $UserProfile->experience = (integer) $experience;
             }
 
+            //TODO: phone должен меняться с подтверждением и проверкой на уникальность
             if ($phone) {
-                $UserProfile->phone = $phone;
+                $User->phone = $phone;
             }
 
             if ($customShiftTemplates &&is_iterable($customShiftTemplates)) {
@@ -1092,7 +1074,7 @@ class FunctionsController extends ActiveController
 
                 //Удаляем старые специализации
                 $listCustomShiftTemplates = CustomShiftTemplates::find()
-                    ->where(['user_profile_id' => $UserProfile->id])
+                    ->where(['user_id' => $User->id])
                     ->all();
 
                 foreach ($listCustomShiftTemplates as $CustomShiftTemplate) {
@@ -1101,7 +1083,7 @@ class FunctionsController extends ActiveController
 
                 foreach ($newCustomShiftTemplates as $CustomShiftTemplate) {
                     $ModelCustomShiftTemplate = new CustomShiftTemplates();
-                    $ModelCustomShiftTemplate->user_profile_id = $UserProfile->id;
+                    $ModelCustomShiftTemplate->user_id = $User->id;
                     $ModelCustomShiftTemplate->template = $CustomShiftTemplate;
 
                     $ModelCustomShiftTemplate->save();
@@ -1113,29 +1095,9 @@ class FunctionsController extends ActiveController
                 $UserProfile->workAddress = $workAddress;
             }
 
-
-
-//            if (firstName) user.set("firstName", firstName);
-//            if (lastName) user.set("lastName", lastName);
-//            if (city) user.set("city", city);
-//            if (phone) user.set("phone", phone);
-//            if (photoUrl) user.set("photoUrl", photoUrl);
-//            if (specialization !== undefined) user.set("specialization", specialization); // ✅ Изменено с specializations на specialization
-//            if (services) user.set("services", services);
-//            if (cars) user.set("cars", cars);
-//            if (email) user.set("email", email);
-//            if (workShifts !== undefined) user.set("workShifts", workShifts);
-//            if (photos !== undefined) user.set("photos", photos);
-//            if (companyName !== undefined) user.set("companyName", companyName);
-//            if (experience !== undefined) user.set("experience", experience);
-//            if (customShiftTemplates !== undefined) user.set("customShiftTemplates", customShiftTemplates);
-//            if (workAddress !== undefined) user.set("workAddress", workAddress);
-
-
-
-            if ($UserProfile->save()) {
+            if ($User->save() && $UserProfile->save()) {
                 return [
-                    "result" => $UserProfile,
+                    "result" => $User,
                 ];
             }
 
@@ -1146,7 +1108,8 @@ class FunctionsController extends ActiveController
             ];
         }
 
-        return 'actionUpdateUserProfile';
+        var_dump('ddd');
+
     }
 
 
@@ -1154,33 +1117,22 @@ class FunctionsController extends ActiveController
     {
         $params = Yii::$app->getRequest()->getBodyParams();
 
-//        $userId = $params['userId'] ?? null;
-
-
-//        $book = Booking::findOne(1);
-////        var_dump($book->workTimeShift);
-//        var_dump($book->workDaysShift);
-//
-//        die;
-
-
+        $Client = UserApp::findOne(Yii::$app->user->id);
 
         $masterId = $params['masterId'] ?? null;
-        $clientId = $params['clientId'] ?? null;
         $serviceName = $params['serviceName'] ?? null;
         $startTime = $params['startTime'] ?? null;
         $endTime = $params['endTime'] ?? null;
 
 
-        if (!$masterId || !$clientId || !$startTime || !$endTime) {
+        if (!$masterId || !$Client || !$startTime || !$endTime) {
             return [
                 "code" => 141,
                 "error" => "Не хватает параметров",
             ];
         }
 
-        $Master = UserProfile::findOne($masterId);
-        $Client = UserProfile::findOne($clientId);
+        $Master = UserApp::findOne($masterId);
 
         if (!$Master) {
             return [
@@ -1196,9 +1148,7 @@ class FunctionsController extends ActiveController
             ];
         }
 
-
         // Извлекаем дату и время
-
         $DTStart = new DateTime($startTime);
         $DTEnd = new DateTime($endTime);
 
@@ -1226,7 +1176,7 @@ class FunctionsController extends ActiveController
             ->joinWith(['workTimeShift'])
             ->joinWith(['workDaysShift'])
             ->where([
-                'work_days_shift.user_profile_id' => $masterId,
+                'work_days_shift.user_id' => $masterId,
                 'work_days_shift.day' => $day,
             ])
             ->andWhere(['<=', 'work_time_shift.start', $startTime])   // Интервалы пересекаются, если
@@ -1262,7 +1212,7 @@ class FunctionsController extends ActiveController
 
         $Service = Services::find()
             ->where([
-                'user_profile_id' => $Master->id,
+                'user_id' => $Master->id,
                 'name' => $serviceName,
             ])->one();
 
@@ -1344,8 +1294,9 @@ class FunctionsController extends ActiveController
         $params = Yii::$app->getRequest()->getBodyParams();
 
         $bookingId = $params['bookingId'] ?? null;
+        $Client = Yii::$app->user;
 
-        if ($bookingId && ($Booking = Booking::findOne($bookingId))) {
+        if ($bookingId && ($Booking = Booking::find()->where(['id' => $bookingId, 'client_id' => $Client->id])->one())) {
             // TODO: Пуш уведомление мастеру о отмене бронирования клиентом
 
             if ($Booking->delete()) {
@@ -1388,7 +1339,15 @@ class FunctionsController extends ActiveController
             ];
         }
 
-        if ($Booking = Booking::findOne($bookingId)) {
+        $Master = Yii::$app->user;
+
+        $Booking = Booking::find()
+            ->where([
+                'id' => $bookingId,
+                'master_id' => $Master->id,
+            ])->one();
+
+        if ($Booking) {
 
             $Booking->status = $status;
 
@@ -1441,14 +1400,14 @@ class FunctionsController extends ActiveController
     {
 
         $params = Yii::$app->getRequest()->getBodyParams();
+        $Master = Yii::$app->user;
 
-        $masterId = $params['userId'] ?? null;
         $shiftDate = $params['shiftDate'] ?? null;
 
-        if (!$masterId || !$shiftDate) {
+        if (!$Master || !$shiftDate) {
             return [
                 "code" => 141,
-                "error" => "Не хватает параметров: userId и shiftDate обязательны",
+                "error" => "Не хватает параметров: shiftDate обязательны",
             ];
         }
 
@@ -1465,12 +1424,11 @@ class FunctionsController extends ActiveController
 
         }
 
-        if ($Master = UserProfile::findOne($masterId)) {
-
+        if ($Master) {
 
             $workDaysShift = WorkDaysShift::find()
                 ->where([
-                    'user_profile_id' => $Master->id,
+                    'user_id' => $Master->id,
                     'work_days_shift.day' => $DTShiftDate->format('Y-m-d'),
                 ])->one();
 
@@ -1498,7 +1456,7 @@ class FunctionsController extends ActiveController
 
             $workDaysShift = WorkDaysShiftApp::find()
                 ->where([
-                    'user_profile_id' => $Master->id,
+                    'user_id' => $Master->id,
                 ])->all();
 
             return [
@@ -1526,12 +1484,11 @@ class FunctionsController extends ActiveController
 
         $params = Yii::$app->getRequest()->getBodyParams();
 
-        $masterId = $params['userId'] ?? null;
+        $Master = UserApp::findOne(Yii::$app->user->id);
+
         $services = $params['services'] ?? null;
         $workShifts = $params['workShifts'] ?? null;
         $customShiftTemplates = $params['customShiftTemplates'] ?? null;
-
-        $Master = UserProfileApp::findOne($masterId);
 
         if (!$Master) {
             return [
@@ -1544,7 +1501,7 @@ class FunctionsController extends ActiveController
         if ($services) {
 
             $listServices = Services::find()
-                ->where(['user_profile_id' => $Master->id])
+                ->where(['user_id' => $Master->id])
                 ->all();
 
             foreach ($listServices as $Service) {
@@ -1556,16 +1513,13 @@ class FunctionsController extends ActiveController
                 if ($Specialization = Specializations::findOne(['name' => $service['category']])) {
 
                     $Service = new Services();
-                    $Service->user_profile_id = $Master->id;
+                    $Service->user_id = $Master->id;
                     $Service->specialization_id = $Specialization->id;
                     $Service->name = $service['name'];
                     $Service->description = $service['description'];
                     $Service->price_from = $service['priceFrom'];
                     $Service->price_to = $service['priceTo'] ?? null;
                     $Service->save();
-
-                    //TODO доделать сохранение фотографий
-
                 }
             }
 
@@ -1573,7 +1527,7 @@ class FunctionsController extends ActiveController
 
         if ($workShifts) {
 
-            $UserWorkShiftDays = WorkDaysShift::find()->where(['user_profile_id' => $Master->id])->all();
+            $UserWorkShiftDays = WorkDaysShift::find()->where(['user_id' => $Master->id])->all();
             $UserWorkShiftTimes = [];
 
             foreach ($UserWorkShiftDays as $UserWorkShiftDay) {
@@ -1595,7 +1549,7 @@ class FunctionsController extends ActiveController
                 if (isset($workShift['slots'])) {
 
                     $WorkDaysShift = new WorkDaysShift();
-                    $WorkDaysShift->user_profile_id = $Master->id;
+                    $WorkDaysShift->user_id = $Master->id;
                     $WorkDaysShift->day = $DTWorkShift->format('Y-m-d');
 
                     if ($WorkDaysShift->save()) {
@@ -1633,7 +1587,7 @@ class FunctionsController extends ActiveController
 
             //Удаляем старые специализации
             $listCustomShiftTemplates = CustomShiftTemplates::find()
-                ->where(['user_profile_id' => $Master->id])
+                ->where(['user_id' => $Master->id])
                 ->all();
 
             foreach ($listCustomShiftTemplates as $CustomShiftTemplate) {
@@ -1642,7 +1596,7 @@ class FunctionsController extends ActiveController
 
             foreach ($newCustomShiftTemplates as $CustomShiftTemplate) {
                 $ModelCustomShiftTemplate = new CustomShiftTemplates();
-                $ModelCustomShiftTemplate->user_profile_id = $Master->id;
+                $ModelCustomShiftTemplate->user_id = $Master->id;
                 $ModelCustomShiftTemplate->template = $CustomShiftTemplate;
 
                 $ModelCustomShiftTemplate->save();
@@ -1655,16 +1609,9 @@ class FunctionsController extends ActiveController
         ];
     }
 
-    public function actionSetUserPhoto($user_profile_id)
+    public function actionSetUserPhoto()
     {
-        $UserProfile = UserProfileApp::findOne($user_profile_id);
-
-        if (!$UserProfile) {
-            return [
-                "code" => 141,
-                "error" => "Пользователь не найден",
-            ];
-        }
+        $User = UserApp::findOne(Yii::$app->user->id);
 
         $photo = UploadedFile::getInstanceByName('photo');
 
@@ -1674,12 +1621,12 @@ class FunctionsController extends ActiveController
             $File->loadFile($photo);
             $File->setType(File::TYPE_AVATAR);
             $File->setSubType(File::SUB_TYPE_AVATAR);
-            $File->setUserId($UserProfile->id);
-            $File->setEntityId($UserProfile->id);
+            $File->setUserId($User->id);
+            $File->setEntityId($User->id);
             $File->saveFile();
 
             return [
-                "result" => $UserProfile,
+                "result" => $User,
             ];
 
         }
@@ -1692,7 +1639,12 @@ class FunctionsController extends ActiveController
 
     public function actionSetPromotionPhoto($promotion_id)
     {
-        $Promotion = PromotionApp::findOne($promotion_id);
+        $User = UserApp::findOne(Yii::$app->user->id);
+        $Promotion = PromotionApp::find()
+            ->where([
+                'id' => $promotion_id,
+                'master_id' => $User->id,
+            ])->one();
 
         if (!$Promotion) {
             return [
@@ -1765,7 +1717,7 @@ class FunctionsController extends ActiveController
                 $File->loadFile($photo);
                 $File->setType(File::TYPE_SERVICE);
                 $File->setSubType(File::SUB_TYPE_SERVICE);
-                $File->setUserId($Service->user_profile_id);
+                $File->setUserId($Service->user_id);
                 $File->setEntityId($Service->id);
                 $File->saveFile();
                 $countFilesLoaded++;
@@ -1804,7 +1756,7 @@ class FunctionsController extends ActiveController
 //        $shopId = Yii::$app->params['shopId'];
 //        $secretKey = Yii::$app->params['secretKey'];
 //
-//        $client = new Client();
+//        $client = new ClientApp();
 //        $client->setAuth($shopId, $secretKey);
 //        $idempotenceKey = uniqid('', true);
 //        $response = $client->createPayment(

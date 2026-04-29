@@ -2,6 +2,7 @@
 namespace api\modules\v1\controllers;
 
 use common\models\Services;
+use common\models\User;
 use common\models\UserProfile;
 use common\models\WorkDaysShift;
 use common\models\WorkTimeShift;
@@ -17,7 +18,9 @@ class MigrationController extends ActiveController
 
     public function actionTest()
     {
+        Yii::$app->db->createCommand('SET FOREIGN_KEY_CHECKS = 0')->execute();
 
+        Yii::$app->db->createCommand('TRUNCATE user')->execute();
         Yii::$app->db->createCommand('TRUNCATE user_profile')->execute();
         Yii::$app->db->createCommand('TRUNCATE specialization')->execute();
         Yii::$app->db->createCommand('TRUNCATE work_days_shift')->execute();
@@ -26,6 +29,8 @@ class MigrationController extends ActiveController
         Yii::$app->db->createCommand('TRUNCATE booking')->execute();
         Yii::$app->db->createCommand('TRUNCATE review')->execute();
         Yii::$app->db->createCommand('TRUNCATE promotion')->execute();
+
+        Yii::$app->db->createCommand('SET FOREIGN_KEY_CHECKS = 1')->execute();
 
 
 //        AppConfig.json
@@ -45,17 +50,35 @@ class MigrationController extends ActiveController
         foreach ($dataUserProfile as $data) {
             $i++;
 
+
+            $username = trim($data->firstName . ' ' . $data->lastName);
+            $email = trim($data->email);
+
+            $User                  = new User();
+            $User->username        = $username;
+            $User->email           = empty($email) ? null : $email;
+            $User->status          = User::STATUS_ACTIVE;
+            $User->role            = array_search($data->role, User::listRoles());
+            $User->created_at      = time();
+            $User->updated_at      = time();
+            $User->phone           = $data->phone;
+            $User->setPassword('12345@');
+            $User->generateAuthKey();
+            $User->generateEmailVerificationToken();
+
+            if (!$User->save()) {
+                var_dump($User->getErrors());
+                die();
+            }
+
             $UserProfile = new UserProfile();
 
 
 //            $UserProfile->fullName = $data;
             $UserProfile->_user_id = $data->userId;
-            $UserProfile->role = array_search($data->role, UserProfile::listRoles());
-//            $UserProfile->user_id = '';
-            $UserProfile->phone = $data->phone;
-//            $UserProfile->carBrand = ;
-//            $UserProfile->city = '';
-            $UserProfile->email = $data->email;
+            $UserProfile->user_id = $User->id;
+            $UserProfile->carBrand = $data->carBrand ?? null;
+            $UserProfile->city = $data->city ?? null;
             $UserProfile->rating = $data->rating ?? null;
 //            $UserProfile->reviewsCount = '';
             $UserProfile->latitude = (string)($data->latitude ?? null);
@@ -79,7 +102,7 @@ class MigrationController extends ActiveController
                         Yii::$app->db->createCommand()
                             ->insert('services', [
 
-                                'user_profile_id' => $UserProfile->id,
+                                'user_id' => $User->id,
                                 'specialization_id' => $specId['id'],
                                 'name' => $service->name,
                                 'description' => $service->description,
@@ -103,7 +126,7 @@ class MigrationController extends ActiveController
                         if ($specId) {
                             Yii::$app->db->createCommand()
                                 ->insert('specialization', [
-                                    'user_profile_id' => $UserProfile->id,
+                                    'user_id' => $User->id,
                                     'specialization_id' => $specId['id'],
                                 ])->execute();
                         }
@@ -116,7 +139,7 @@ class MigrationController extends ActiveController
 
                         Yii::$app->db->createCommand()
                             ->insert('work_days_shift', [
-                                'user_profile_id' => $UserProfile->id,
+                                'user_id' => $User->id,
                                 'day' => $workShift->date,
                             ])->execute();
 
@@ -150,7 +173,7 @@ class MigrationController extends ActiveController
 
                         Yii::$app->db->createCommand()
                             ->insert('custom_shift_templates', [
-                                'user_profile_id' => $UserProfile->id,
+                                'user_id' => $User->id,
                                 'template' => $res[0] . '-' . $res[1],
                             ])->execute();
                     }
@@ -175,7 +198,7 @@ class MigrationController extends ActiveController
 
             $workDayShift = WorkDaysShift::find()
                 ->where([
-                    'user_profile_id' => $UserProfileMaster->id,
+                    'user_id' => $UserProfileMaster->user_id,
                     'day' => $DTWorkDayShift->format('Y-m-d'),
                 ])->one();
 
@@ -189,7 +212,7 @@ class MigrationController extends ActiveController
 
                 $service = Services::find()
                 ->where([
-                    'user_profile_id' => $UserProfileMaster->id,
+                    'user_id' => $UserProfileMaster->user_id,
                     'name' => $data->serviceName,
                 ])->one();
 
@@ -198,8 +221,8 @@ class MigrationController extends ActiveController
 
                     Yii::$app->db->createCommand()
                         ->insert('booking', [
-                            'client_id' => $UserProfileClient->id,
-                            'master_id' => $UserProfileMaster->id,
+                            'client_id' => $UserProfileClient->user_id,
+                            'master_id' => $UserProfileMaster->user_id,
                             'work_time_shift_id' => $workTimeShift->id,
                             'service_id' => $service->id,
                         ])->execute();
@@ -221,14 +244,12 @@ class MigrationController extends ActiveController
             // TODO: исправить кодировку text для хранения смайликов
             Yii::$app->db->createCommand()
                 ->insert('review', [
-                    'client_id' => $UserProfileClient->id,
-                    'master_id' => $UserProfileMaster->id,
+                    'client_id' => $UserProfileClient->user_id,
+                    'master_id' => $UserProfileMaster->user_id,
                     'rating' => $data->rating,
                     'author_name' => $data->authorName,
                     'text' => $data->text,
                 ])->execute();
-
-
         }
 
         $dataPromotion = json_decode(file_get_contents($pathBack4Db . '/Promotion.json'));
@@ -244,10 +265,10 @@ class MigrationController extends ActiveController
                     'title' => $data->title,
                     'description' => $data->description,
                     'validUntil' => $data->validUntil,
-                    'order' => $data->order,
+//                    'order' => $data->order,
                     'phoneNumber' => $data->phoneNumber,
                     'conditions' => $data->conditions,
-                    'master_id' => $UserProfileMaster->id,
+                    'master_id' => $UserProfileMaster->user_id,
                     'isPaid' => (int) false,
                     'publishedUntil' => $publishedUntil->format('Y-m-d H:i:s'),
                 ])->execute();
@@ -255,7 +276,7 @@ class MigrationController extends ActiveController
 
         }
 
-
+        echo "Done! " . time();
 
     }
 

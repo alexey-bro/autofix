@@ -55,8 +55,8 @@ class Review extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'client_id' => 'Client ID',
-            'master_id' => 'Master ID',
+            'client_id' => 'ClientApp ID',
+            'master_id' => 'MasterApp ID',
             'rating' => 'Rating',
             'text' => 'Text',
             'author_name' => 'author name',

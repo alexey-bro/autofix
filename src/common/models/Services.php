@@ -9,7 +9,7 @@ use Yii;
  * This is the model class for table "services".
  *
  * @property int $id
- * @property int $user_profile_id
+ * @property int $user_id
  * @property int $specialization_id
  * @property string $name
  * @property string|null $description
@@ -39,8 +39,8 @@ class Services extends \yii\db\ActiveRecord
             [['description'], 'default', 'value' => null],
             [['specialization_id'], 'default', 'value' => 0],
 //            [['price_to'], 'default', 'value' => 0.00],
-            [['user_profile_id', 'name'], 'required'],
-            [['user_profile_id', 'specialization_id'], 'integer'],
+            [['user_id', 'name'], 'required'],
+            [['user_id', 'specialization_id'], 'integer'],
             [['price_from', 'price_to'], 'number'],
             [['created_at', 'updated_at'], 'safe'],
             [['name', 'description'], 'string', 'max' => 255],
@@ -54,7 +54,7 @@ class Services extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'user_profile_id' => 'User Profile ID',
+            'user_id' => 'User ID',
             'specialization_id' => 'Specialization ID',
             'name' => 'Name',
             'description' => 'Description',

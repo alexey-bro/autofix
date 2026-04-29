@@ -6,7 +6,7 @@ namespace common\models;
  * This is the model class for table "work_days_shift".
  *
  * @property int $id
- * @property int $user_profile_id
+ * @property int $user_id
  * @property string $day
  * @property string $created_at
  * @property string $updated_at
@@ -33,8 +33,8 @@ class WorkDaysShift extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['user_profile_id', 'day'], 'required'],
-            [['user_profile_id'], 'integer'],
+            [['user_id', 'day'], 'required'],
+            [['user_id'], 'integer'],
             [['day', 'created_at', 'updated_at'], 'safe'],
         ];
     }
@@ -46,7 +46,7 @@ class WorkDaysShift extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'user_profile_id' => 'User Profile ID',
+            'user_id' => 'User ID',
             'day' => 'Day',
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
@@ -58,7 +58,7 @@ class WorkDaysShift extends \yii\db\ActiveRecord
      */
     public function getUserProfile()
     {
-        return $this->hasOne(UserProfile::class, ['id' => 'user_profile_id']);
+        return $this->hasOne(UserProfile::class, ['id' => 'user_id']);
     }
 
     /**
