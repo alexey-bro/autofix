@@ -7,7 +7,6 @@ namespace common\models;
  *
  * @property int $id
  * @property string|null $_user_id
- * @property string|null $fullName
  * @property int $user_id
  * @property string|null $carBrand
  * @property string|null $city
@@ -41,12 +40,12 @@ class UserProfile extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['fullName', 'carBrand', 'city', 'latitude', 'longitude', 'workAddress', 'firstName', 'lastName', 'companyName'], 'default', 'value' => null],
+            [['carBrand', 'city', 'latitude', 'longitude', 'workAddress', 'firstName', 'lastName', 'companyName'], 'default', 'value' => null],
             [['experience', 'rating'], 'default', 'value' => 0],
             [['user_id', 'rating', 'reviewsCount', 'experience'], 'integer'],
             [['user_id'], 'required'],
             [['created_at', 'updated_at'], 'safe'],
-            [['fullName', 'carBrand', 'city', 'latitude', 'longitude', 'workAddress', 'firstName', 'lastName', 'companyName'], 'string', 'max' => 255],
+            [['carBrand', 'city', 'latitude', 'longitude', 'workAddress', 'firstName', 'lastName', 'companyName'], 'string', 'max' => 255],
         ];
     }
 
@@ -57,7 +56,6 @@ class UserProfile extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'fullName' => 'Full Name',
             'user_id' => 'User ID',
             'carBrand' => 'Car Brand',
             'city' => 'City',
