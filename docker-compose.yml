@@ -11,9 +11,13 @@ services:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - autofix_yii2_php
-      - autofix_yii2_mysql
+      - autofix_yii2_db
     networks:
       - autofix_yii2_network
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 64M
 
   # PHP-FPM
   autofix_yii2_php:
@@ -28,20 +32,24 @@ services:
     volumes:
       - ./src:/var/www/html
     environment:
-      - DB_HOST=autofix_yii2_mysql
+      - DB_HOST=autofix_yii2_db
       - DB_PORT=3306
       - DB_DATABASE=autofix
       - DB_USERNAME=autofix_user
       - DB_PASSWORD=autofix_password
     depends_on:
-      - autofix_yii2_mysql
+      - autofix_yii2_db
     networks:
       - autofix_yii2_network
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 256M
 
-  # MySQL Database
-  autofix_yii2_mysql:
-    image: mysql:8.0
-    container_name: autofix_yii2_mysql
+  # Database MariaDB next 11.8
+  autofix_yii2_db:
+    image: mariadb:11.8
+    container_name: autofix_yii2_db
     ports:
       - "3306:3306"
     environment:
@@ -50,9 +58,15 @@ services:
       MYSQL_USER: autofix_user
       MYSQL_PASSWORD: autofix_password
     volumes:
-      - mysql_data:/var/lib/mysql
+      - db_data:/var/lib/mysql
+      - ./docker/db/mariadb_memory.cnf:/etc/mysql/conf.d/my.cnf:ro  # подключаем конфиг
+      - ./docker/db/logs:/var/log/mysql                  # логи на хост
     networks:
       - autofix_yii2_network
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 512M
 
 #  autofix_yii2_mailpit:
 #    image: axllent/mailpit:latest
@@ -76,11 +90,11 @@ services:
     ports:
       - "8080:80"
     environment:
-      PMA_HOST: autofix_yii2_mysql
+      PMA_HOST: autofix_yii2_db
       PMA_PORT: 3306
       MYSQL_ROOT_PASSWORD: root_password
     depends_on:
-      - autofix_yii2_mysql
+      - autofix_yii2_db
     networks:
       - autofix_yii2_network
 
@@ -89,5 +103,5 @@ networks:
     driver: bridge
 
 volumes:
-  mysql_data:
+  db_data:
 #  mailpit-data:
