@@ -1,6 +1,7 @@
 <?php
 namespace api\modules\v1\controllers;
 
+use common\jobs\DownloadJob;
 use common\models\Services;
 use common\models\User;
 use common\models\UserProfile;
@@ -277,6 +278,19 @@ class MigrationController extends ActiveController
         }
 
         echo "Done! " . time();
+
+    }
+
+    public function actionExampleJob()
+    {
+
+        $r = Yii::$app->queue->push(new DownloadJob([
+            'url' => 'http://example.com/image.jpg',
+            'file' => '/tmp/image.jpg',
+        ]));
+
+        var_dump($r);
+
 
     }
 
