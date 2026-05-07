@@ -26,7 +26,8 @@ return [
         ],
         'migrate' => [
             'class' => 'yii\console\controllers\MigrateController',
-            'migrationPath' => null,
+//            migrationPath если значение установить в null, то пользовательские миграции не применяются
+//            'migrationPath' => null,
             'migrationNamespaces' => [
                 'yii\queue\db\migrations',
             ],
