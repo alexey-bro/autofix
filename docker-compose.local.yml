@@ -1,8 +1,10 @@
 services:
   autofix_yii2_nginx:
     volumes:
+      - "./docker/nginx/local/conf.d:/etc/nginx/conf.d"
+      - "./docker/nginx/local/vhosts:/etc/nginx/vhosts"
+      - "./docker/nginx/local/nginx.conf:/etc/nginx/nginx.conf"
       - ./src:/var/www/html
-      - ./docker/nginx/local/default.conf:/etc/nginx/conf.d/default.conf
     ports:
       - "80:80"
 #
