@@ -1,0 +1,14 @@
+services:
+  autofix_yii2_nginx:
+    volumes:
+      - ./src:/var/www/html
+      - ./docker/nginx/production/default.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "80:80"
+      - "443:443"
+
+  autofix_yii2_php:
+    restart: always
+#    build:
+#      args:
+#        - PHP_XDEBUG=no    # на сервере xdebug выключен

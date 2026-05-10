@@ -5,10 +5,6 @@ services:
     container_name: autofix_yii2_nginx
     ports:
       - "80:80"
-      - "443:443"
-    volumes:
-      - ./src:/var/www/html
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - autofix_yii2_php
       - autofix_yii2_db
