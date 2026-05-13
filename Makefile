@@ -14,8 +14,8 @@ help:
 	@echo "  prod-down								prod-down docker"
 	@echo "  prod-stop								prod-down stop"
 	@echo "  cert-issue-with-www					Выпуск сертификата через Certbot в Docker (webroot режим), включая поддомен www"
-	@echo "  cert-issue								Обновление сертификата"
-	@echo "  cert-renew								Выпуск сертификата через Certbot в Docker (webroot режим)"
+	@echo "  cert-issue								Выпуск сертификата через Certbot в Docker (webroot режим)"
+	@echo "  cert-renew								Обновление сертификата"
 	@echo "  cert-list								Проверка сертификатов"
 	@echo "  cert-dry-run							Тест обновления (без реального выпуска)"
 
