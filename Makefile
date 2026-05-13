@@ -13,7 +13,11 @@ help:
 	@echo "  prod-up								prod-up docker"
 	@echo "  prod-down								prod-down docker"
 	@echo "  prod-stop								prod-down stop"
-
+	@echo "  cert-issue-with-www					Выпуск сертификата через Certbot в Docker (webroot режим), включая поддомен www"
+	@echo "  cert-issue								Обновление сертификата"
+	@echo "  cert-renew								Выпуск сертификата через Certbot в Docker (webroot режим)"
+	@echo "  cert-list								Проверка сертификатов"
+	@echo "  cert-dry-run							Тест обновления (без реального выпуска)"
 
 local-up:
 	docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
@@ -40,7 +44,7 @@ WEBROOT_PATH = ./docker/certbot/www
 CERTS_PATH   = ./docker/certbot/certs
 
 # Выпуск сертификата через Certbot в Docker (webroot режим)
-cert-issue:
+cert-issue-with-www:
 	@echo "📋 Создаём папки для certbot..."
 	mkdir -p $(WEBROOT_PATH) $(CERTS_PATH)
 	@echo "🔐 Выпускаем сертификат для $(DOMAIN)..."
@@ -56,6 +60,24 @@ cert-issue:
 			-d $(DOMAIN) \
 			-d www.$(DOMAIN)
 	@echo "✅ Сертификат успешно выпущен!"
+
+# Выпуск сертификата через Certbot в Docker (webroot режим)
+cert-issue:
+	@echo "📋 Создаём папки для certbot..."
+	mkdir -p $(WEBROOT_PATH) $(CERTS_PATH)
+	@echo "🔐 Выпускаем сертификат для $(DOMAIN)..."
+	docker run --rm \
+		-v $(PWD)/$(CERTS_PATH):/etc/letsencrypt \
+		-v $(PWD)/$(WEBROOT_PATH):/var/www/certbot \
+		certbot/certbot certonly \
+			--webroot \
+			--webroot-path=/var/www/certbot \
+			--email $(EMAIL) \
+			--agree-tos \
+			--no-eff-email \
+			-d $(DOMAIN)
+	@echo "✅ Сертификат успешно выпущен!"
+
 
 # Обновление сертификата
 cert-renew:
