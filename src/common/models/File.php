@@ -454,7 +454,7 @@ class File extends \yii\db\ActiveRecord
 
     public function getUrl(): string
     {
-        return Yii::getAlias('@frontWeb') . $this->path . $this->uuid . '.' . $this->extension;
+        return Yii::getAlias('@frontSSLWeb') . $this->path . $this->uuid . '.' . $this->extension;
     }
 
     /**
