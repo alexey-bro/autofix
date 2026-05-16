@@ -165,6 +165,27 @@ class FunctionsController extends BaseController
         }
     }
 
+    #[OA\Post(
+        path: '/functions/get-all-users',
+        description: 'description',
+        summary: 'Список всех пользователей',
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UsersListResponse'
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionGetAllUsers()
     {
         $allUsers = UserApp::find()->all();
