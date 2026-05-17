@@ -2,9 +2,11 @@
 
 namespace api\modules\v1\controllers;
 
+use common\models\User;
 use light\swagger\SwaggerAction;
 use light\swagger\SwaggerApiAction;
 use Yii;
+use yii\filters\AccessControl;
 use yii\filters\auth\HttpBearerAuth;
 //use yii\rest\Controller;
 use yii\helpers\Url;
@@ -12,6 +14,28 @@ use yii\web\Controller;
 
 class ApiController extends Controller
 {
+
+    public function beforeAction($action): bool
+    {
+        if (parent::beforeAction($action)) {
+            // Check if the user is authenticated
+            // Включаем сессии для компонента user
+
+            Yii::$app->user->enableSession = true;
+            Yii::$app->session->open();
+
+            // Пробуем восстановить пользователя из сессии
+            $identity = Yii::$app->user->identity;
+
+            if ($identity && $identity->role === User::ROLE_USER_ADMIN) {
+                return true;
+            }
+
+        }
+        return false;
+    }
+
+
 //    public function behaviors(): array
 //    {
 //        $behaviors = parent::behaviors();
@@ -60,7 +84,23 @@ class ApiController extends Controller
 
     public function actionSwagger()
     {
-        var_dump(Yii::getAlias('@api/modules/v1/controllers'));
+
+//        var_dump('fffff');
+
+
+//        // Включаем сессии для компонента user
+//        Yii::$app->user->enableSession = true;
+//        Yii::$app->session->open();
+//
+//        // Пробуем восстановить пользователя из сессии
+//        $identity = Yii::$app->user->identity;
+//
+//        var_dump($identity->role);
+//        die;
+//
+//
+//
+////        var_dump(Yii::getAlias('@api/modules/v1/controllers'));
 
     }
 
