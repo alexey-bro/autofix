@@ -33,7 +33,59 @@ use yii\web\NotFoundHttpException;
 use yii\web\UnauthorizedHttpException;
 use yii\web\UploadedFile;
 use YooKassa\Client;
+use OpenApi\Attributes as OA;
 
+
+#[OA\Info(
+    title: "Autofix APP",
+    version: "1.0"
+)]
+#[OA\OpenApi(
+    security: [
+        ['bearerAuth' => []],
+        ['ApiKeyAuth' => []]
+    ]
+)]
+#[OA\SecurityScheme(
+    securityScheme: "ApiKeyAuth",
+    type: "apiKey",
+    name: "X-API-KEY",
+    in: "header"
+)]
+#[OA\SecurityScheme(
+    securityScheme: "bearerAuth",
+    type: "http",
+    bearerFormat: "JWT",
+    description: "JWT Authorization header using the Bearer scheme",
+    name: "Authorization",
+    scheme: "bearer",
+    in: "header"
+)]
+#[OA\Server(
+    url: "https://api.findmymechanic.ru/v1",
+    description: "Production server"
+)]
+#[OA\Server(
+    url: "http://api.autofix.loc/v1",
+    description: "Local development server"
+)]
+// Глобальное описание тегов (для кастомизации отображения)
+#[OA\Tag(
+    name: "Auth",
+    description: "Аутентификация и авторизация пользователей"
+)]
+#[OA\Tag(
+    name: "Profile",
+    description: "Управление профилем пользователя"
+)]
+#[OA\Tag(
+    name: "Orders",
+    description: "Работа с заказами"
+)]
+#[OA\Tag(
+    name: "Schemas",
+    description: "Схемы данных API"
+)]
 class FunctionsController extends BaseController
 {
     //TODO: добавить во все экшены условия, чтобы без обязательных полей возвращались ошибки
@@ -52,6 +104,32 @@ class FunctionsController extends BaseController
         return $behaviors;
     }
 
+
+    #[OA\Post(
+        path: '/functions/login-by-phone',
+        tags: ['Auth'],
+        requestBody: new OA\RequestBody(
+            description: 'User phone number',
+            required: true,
+            content: new OA\JsonContent(ref: '#/components/schemas/LoginByPhoneRequest')
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешная авторизация',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/LoginResponse'
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionLoginByPhone()
     {
 
@@ -85,28 +163,29 @@ class FunctionsController extends BaseController
         } else {
             throw new UnauthorizedHttpException('Ошибка авторизации');
         }
-
-
-
-
-//        "result": {
-//        "objectId": "RD10hCVAbS",
-//        "userId": "user_1770296843741",
-//        "role": "CLIENT",
-//        "firstName": "Алексеев",
-//        "lastName": "Иванов",
-//        "phone": "+79507606922",
-//        "carBrand": "Ренжровер",
-//        "city": "",
-//        "email": "",
-//        "rating": 0,
-//        "photos": [],
-//        "services": [],
-//        "reviewsCount": 0,
-//        "companyName": null,
-//        "customShiftTemplates": null
     }
 
+    #[OA\Post(
+        path: '/functions/get-all-users',
+        description: 'description',
+        summary: 'Список всех пользователей',
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UsersListResponse'
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionGetAllUsers()
     {
         $allUsers = UserApp::find()->all();
@@ -117,7 +196,18 @@ class FunctionsController extends BaseController
 
     }
 
-
+    #[OA\Post(
+        path: '/functions/get-user-profile',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionGetUserProfile()
     {
         $User = UserApp::findOne(Yii::$app->user->id);
@@ -129,6 +219,18 @@ class FunctionsController extends BaseController
         // TODO: добавить 404 еслм нет юзера
     }
 
+    #[OA\Post(
+        path: '/functions/get-master-by-id',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     /**
      * @throws InvalidConfigException
      * @throws NotFoundHttpException
@@ -150,7 +252,18 @@ class FunctionsController extends BaseController
 
     }
 
-
+    #[OA\Post(
+        path: '/functions/get--client-bookings',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionGetClientBookings()
     {
 
@@ -184,7 +297,18 @@ class FunctionsController extends BaseController
 
     }
 
-
+    #[OA\Post(
+        path: '/functions/get-master-bookings',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionGetMasterBookings()
     {
         $params = Yii::$app->getRequest()->getBodyParams();
@@ -219,6 +343,18 @@ class FunctionsController extends BaseController
         ];
     }
 
+    #[OA\Post(
+        path: '/functions/request-phone-verification',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionRequestPhoneVerification()
     {
 
@@ -236,6 +372,18 @@ class FunctionsController extends BaseController
         ];
     }
 
+    #[OA\Post(
+        path: '/functions/get-promotions',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionGetPromotions()
     {
         $DT = new DateTime();
@@ -249,6 +397,18 @@ class FunctionsController extends BaseController
         ];
     }
 
+    #[OA\Post(
+        path: '/functions/get-rewiews-for-master',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionGetReviewsForMaster()
     {
         $params = Yii::$app->getRequest()->getBodyParams();
@@ -263,6 +423,18 @@ class FunctionsController extends BaseController
         ];
     }
 
+    #[OA\Post(
+        path: '/functions/submit-review',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionSubmitReview()
     {
 
@@ -342,6 +514,18 @@ class FunctionsController extends BaseController
         ];
     }
 
+    #[OA\Post(
+        path: '/functions/submit-promotion',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionSubmitPromotion()
     {
         $params = Yii::$app->getRequest()->getBodyParams();
@@ -474,6 +658,18 @@ class FunctionsController extends BaseController
 
     }
 
+    #[OA\Post(
+        path: '/functions/update-promotion',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionUpdatePromotion()
     {
 
@@ -531,6 +727,18 @@ class FunctionsController extends BaseController
 
     }
 
+    #[OA\Post(
+        path: '/functions/payment-promotion',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionPaymentPromotion()
     {
 
@@ -724,7 +932,18 @@ class FunctionsController extends BaseController
     }
 
     // TODO: webhook для проверки оплаты и измененя статуса платежа
-
+    #[OA\Post(
+        path: '/functions/delete-promotion',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionDeletePromotion()
     {
         $params = Yii::$app->getRequest()->getBodyParams();
@@ -763,6 +982,18 @@ class FunctionsController extends BaseController
     }
 
 
+    #[OA\Post(
+        path: '/functions/updatemaster-basic',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     // 1. Обновление базовых полей
     public function actionUpdateMasterBasic()
     {
@@ -832,7 +1063,18 @@ class FunctionsController extends BaseController
         ];
     }
 
-
+    #[OA\Post(
+        path: '/functions/update-master-rating',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionUpdateMasterRating()
     {
 
@@ -879,6 +1121,18 @@ class FunctionsController extends BaseController
 
     }
 
+    #[OA\Post(
+        path: '/functions/update-user-profile',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionUpdateUserProfile()
     {
 
@@ -1112,7 +1366,18 @@ class FunctionsController extends BaseController
 
     }
 
-
+    #[OA\Post(
+        path: '/functions/book-slot',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionBookSlot()
     {
         $params = Yii::$app->getRequest()->getBodyParams();
@@ -1288,6 +1553,18 @@ class FunctionsController extends BaseController
         }
     }
 
+    #[OA\Post(
+        path: '/functions/cancel-booking',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionCancelBooking()
     {
 
@@ -1321,9 +1598,18 @@ class FunctionsController extends BaseController
 
     }
 
-
-
-
+    #[OA\Post(
+        path: '/functions/update-booking-status',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionUpdateBookingStatus()
     {
 
@@ -1396,6 +1682,18 @@ class FunctionsController extends BaseController
 
     }
 
+    #[OA\Post(
+        path: '/functions/delete-worck-shift',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionDeleteWorkShift()
     {
 
@@ -1478,7 +1776,18 @@ class FunctionsController extends BaseController
         }
     }
 
-
+    #[OA\Post(
+        path: '/functions/update-master-shedule-and-services',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionUpdateMasterScheduleAndServices()
     {
 
@@ -1609,6 +1918,18 @@ class FunctionsController extends BaseController
         ];
     }
 
+    #[OA\Post(
+        path: '/functions/set-user-photo',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionSetUserPhoto()
     {
         $User = UserApp::findOne(Yii::$app->user->id);
@@ -1637,6 +1958,18 @@ class FunctionsController extends BaseController
         ];
     }
 
+    #[OA\Post(
+        path: '/functions/set-promotion-photo',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionSetPromotionPhoto($promotion_id)
     {
         $User = UserApp::findOne(Yii::$app->user->id);
@@ -1694,6 +2027,18 @@ class FunctionsController extends BaseController
         ];
     }
 
+    #[OA\Post(
+        path: '/functions/set-service-photo',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionSetServicePhoto($service_id)
     {
 
@@ -1750,6 +2095,18 @@ class FunctionsController extends BaseController
     }
 
 
+//    #[OA\Post(
+//        path: '/functions/create-yookassa-payment',
+//        responses: [
+//            new OA\Response(
+//                response: 401,
+//                description: 'Ошибка авторизации',
+//                content: new OA\JsonContent(
+//                    ref: '#/components/schemas/UnauthorizedData'
+//                )
+//            ),
+//        ]
+//    )]
     public function actionCreateYookassaPayment()
     {
 
@@ -1797,11 +2154,35 @@ class FunctionsController extends BaseController
         return 'actionCreateYookassaPayment';
     }
 
+    #[OA\Post(
+        path: '/functions/check-and-create-promotion',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionCheckAndCreatePromotion()
     {
         return 'actionCheckAndCreatePromotion';
     }
 
+    #[OA\Post(
+        path: '/functions/yookassa-webhook',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionYookassaWebhook()
     {
         return 'actionYookassaWebhook';
@@ -1813,6 +2194,18 @@ class FunctionsController extends BaseController
 //        return 'actionWorkShifts';
 //    }
 
+    #[OA\Post(
+        path: '/functions/delete-photo',
+        responses: [
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionDeletePhoto()
     {
         return 'actionDeletePhoto';

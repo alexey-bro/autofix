@@ -47,12 +47,14 @@ class User extends ActiveRecord implements IdentityInterface
 
     public const ROLE_USER_CLIENT = 1;
     public const ROLE_USER_MASTER = 2;
+    public const ROLE_USER_ADMIN = 9;
 
     public static function listRoles()
     {
         return [
             self::ROLE_USER_CLIENT => 'CLIENT',
             self::ROLE_USER_MASTER => 'MASTER',
+            self::ROLE_USER_ADMIN => 'ADMIN',
         ];
     }
 
