@@ -76,15 +76,15 @@ use OpenApi\Attributes as OA;
 )]
 #[OA\Tag(
     name: "Client",
-    description: "Управление профилем пользователя"
+    description: "Запросы клиента"
 )]
 #[OA\Tag(
     name: "Master",
-    description: "Работа с заказами"
+    description: "Запросы мастера"
 )]
 #[OA\Tag(
     name: "Common",
-    description: "Работа с заказами"
+    description: "Общие запросы"
 )]
 #[OA\Tag(
     name: "Schemas",
@@ -346,7 +346,16 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/get-master-bookings',
+        summary: 'Получить свои бронирования (для мастера)',
+        tags: ['Master'],
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/MasterBookingsListResponse'
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -392,7 +401,33 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/request-phone-verification',
+        summary: 'Отправка кода на телефон',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/phoneNumber'  // <-- одна строка
+        ),
+        tags: ['Auth'],
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: "result",
+                            type: "string",
+                            example: "Код отправлен"
+                        ),
+                        new OA\Property(
+                            property: "code",
+                            description: "Код подтверждения (возвращается только в режиме отладки)",
+                            type: "string",
+                            example: "123456",
+                            nullable: true
+                        )
+                    ]
+
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',

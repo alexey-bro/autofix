@@ -2,11 +2,10 @@
 
 namespace api\modules\v1\swagger\response\schemas;
 
-
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
-    schema: 'BookingClient',
+    schema: 'MasterBookingClient',
     description: 'Клиент в записи',
     properties: [
         new OA\Property(property: 'userId', type: 'integer', example: 22),
@@ -17,7 +16,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'carBrand', type: 'string', nullable: true, example: 'Mazda 6 2013'),
     ]
 )]
-class ShortClientSchema
+class MasterBookingClientSchema
 {
 
 }

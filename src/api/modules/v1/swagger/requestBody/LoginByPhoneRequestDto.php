@@ -2,7 +2,6 @@
 
 namespace api\modules\v1\swagger\requestBody;
 
-
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
