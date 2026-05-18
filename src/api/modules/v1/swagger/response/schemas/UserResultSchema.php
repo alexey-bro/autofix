@@ -27,20 +27,21 @@ use OpenApi\Attributes as OA;
         new OA\Property(
             property: 'services',
             type: 'array',
-            items: new OA\Items(type: 'object'),
-            example: []
+            items: new OA\Items(ref: '#/components/schemas/Service',),
         ),
         new OA\Property(
             property: 'workShifts',
             type: 'array',
-            items: new OA\Items(type: 'object'),
-            example: []
+            items: new OA\Items(ref: '#/components/schemas/WorkShift'),
         ),
         new OA\Property(
             property: 'customShiftTemplates',
             type: 'array',
-            items: new OA\Items(type: 'object'),
-            example: []
+            items: new OA\Items(type: 'string'),
+            example: [
+                '09:00|17:00|09:00-17:00-1778059115',
+                '09:00|14:00|09:00-14:00-1778059115',
+            ],
         ),
         new OA\Property(property: 'city', type: 'string', example: 'Воронеж'),
         new OA\Property(property: 'companyName', type: 'string', nullable: true, example: null),

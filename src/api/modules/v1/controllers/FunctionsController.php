@@ -75,11 +75,15 @@ use OpenApi\Attributes as OA;
     description: "Аутентификация и авторизация пользователей"
 )]
 #[OA\Tag(
-    name: "Profile",
+    name: "Client",
     description: "Управление профилем пользователя"
 )]
 #[OA\Tag(
-    name: "Orders",
+    name: "Master",
+    description: "Работа с заказами"
+)]
+#[OA\Tag(
+    name: "Common",
     description: "Работа с заказами"
 )]
 #[OA\Tag(
@@ -169,6 +173,7 @@ class FunctionsController extends BaseController
         path: '/functions/get-all-users',
         description: 'description',
         summary: 'Список всех пользователей',
+        tags: ['Common'],
         responses: [
             new OA\Response(
                 response: 200,
@@ -198,7 +203,21 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/get-user-profile',
+        summary: 'Профиль пользователя',
+        tags: ['Common'],
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Профиль пользователя',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            ref: '#/components/schemas/UserResult'
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -221,7 +240,26 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/get-master-by-id',
+        summary: 'Профиль пользователя (мастера)',
+        tags: ['Master'],
+        requestBody: new OA\RequestBody(
+            description: 'User Id',
+            required: true,
+            content: new OA\JsonContent(ref: '#/components/schemas/UserId')
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Профиль пользователя',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            ref: '#/components/schemas/UserResult'
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -253,8 +291,17 @@ class FunctionsController extends BaseController
     }
 
     #[OA\Post(
-        path: '/functions/get--client-bookings',
+        path: '/functions/get-client-bookings',
+        tags: ['Client'],
+        summary: 'Получить свои бронирования (для клиента)',
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/BookingsListResponse'
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
