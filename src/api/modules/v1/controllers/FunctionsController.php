@@ -456,7 +456,16 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/get-promotions',
+        tags: ['Client'],
+        summary: 'Список промоакций',
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/PromotionsListResponse'
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
