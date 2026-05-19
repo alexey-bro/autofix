@@ -489,8 +489,20 @@ class FunctionsController extends BaseController
     }
 
     #[OA\Post(
-        path: '/functions/get-rewiews-for-master',
+        path: '/functions/get-reviews-for-master',
+        tags: ['Master'],
+        summary: 'Список отзывов на мастер',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/masterId'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/ReviewsListResponse'
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -516,7 +528,28 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/submit-review',
+        tags: ['Client'],
+        summary: 'Отправить отзыв',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/SubmitReview'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'success', type: 'boolean', example: true),
+                                new OA\Property(property: 'reviewId', type: 'integer', example: 7),
+                            ]
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -607,7 +640,31 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/submit-promotion',
+        tags: ['Client'],
+        summary: 'Отправить отзыв',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/SubmitPromotion'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'success', type: 'boolean', example: true),
+                                new OA\Property(property: 'promotionId', type: 'integer', example: 7),
+                                new OA\Property(property: 'confirmationUrl', type: 'string', example: 'https://yoomoney.ru/checkout/payments/v2/contract?orderId=319ed5df-000f-5001-9000-11bb25261e61'),
+                                new OA\Property(property: 'amount', type: 'integer', example: 500),
+                                new OA\Property(property: 'isPaid', type: 'integer', example: 0),
+                            ]
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
