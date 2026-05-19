@@ -75,12 +75,16 @@ use OpenApi\Attributes as OA;
     description: "Аутентификация и авторизация пользователей"
 )]
 #[OA\Tag(
-    name: "Profile",
-    description: "Управление профилем пользователя"
+    name: "Client",
+    description: "Запросы клиента"
 )]
 #[OA\Tag(
-    name: "Orders",
-    description: "Работа с заказами"
+    name: "Master",
+    description: "Запросы мастера"
+)]
+#[OA\Tag(
+    name: "Common",
+    description: "Общие запросы"
 )]
 #[OA\Tag(
     name: "Schemas",
@@ -169,6 +173,7 @@ class FunctionsController extends BaseController
         path: '/functions/get-all-users',
         description: 'description',
         summary: 'Список всех пользователей',
+        tags: ['Common'],
         responses: [
             new OA\Response(
                 response: 200,
@@ -198,7 +203,21 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/get-user-profile',
+        summary: 'Профиль пользователя',
+        tags: ['Common'],
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Профиль пользователя',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            ref: '#/components/schemas/UserResult'
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -221,7 +240,26 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/get-master-by-id',
+        summary: 'Профиль пользователя (мастера)',
+        tags: ['Master'],
+        requestBody: new OA\RequestBody(
+            description: 'User Id',
+            required: true,
+            content: new OA\JsonContent(ref: '#/components/schemas/UserId')
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Профиль пользователя',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            ref: '#/components/schemas/UserResult'
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -253,8 +291,17 @@ class FunctionsController extends BaseController
     }
 
     #[OA\Post(
-        path: '/functions/get--client-bookings',
+        path: '/functions/get-client-bookings',
+        tags: ['Client'],
+        summary: 'Получить свои бронирования (для клиента)',
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/BookingsListResponse'
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -299,7 +346,16 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/get-master-bookings',
+        summary: 'Получить свои бронирования (для мастера)',
+        tags: ['Master'],
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/MasterBookingsListResponse'
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -345,7 +401,33 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/request-phone-verification',
+        summary: 'Отправка кода на телефон',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/phoneNumber'  // <-- одна строка
+        ),
+        tags: ['Auth'],
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: "result",
+                            type: "string",
+                            example: "Код отправлен"
+                        ),
+                        new OA\Property(
+                            property: "code",
+                            description: "Код подтверждения (возвращается только в режиме отладки)",
+                            type: "string",
+                            example: "123456",
+                            nullable: true
+                        )
+                    ]
+
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -374,7 +456,16 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/get-promotions',
+        tags: ['Client'],
+        summary: 'Список промоакций',
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/PromotionsListResponse'
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -398,8 +489,20 @@ class FunctionsController extends BaseController
     }
 
     #[OA\Post(
-        path: '/functions/get-rewiews-for-master',
+        path: '/functions/get-reviews-for-master',
+        tags: ['Master'],
+        summary: 'Список отзывов на мастер',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/masterId'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/ReviewsListResponse'
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -425,7 +528,28 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/submit-review',
+        tags: ['Client'],
+        summary: 'Отправить отзыв',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/SubmitReview'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'success', type: 'boolean', example: true),
+                                new OA\Property(property: 'reviewId', type: 'integer', example: 7),
+                            ]
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -516,7 +640,31 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/submit-promotion',
+        tags: ['Client'],
+        summary: 'Отправить отзыв',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/SubmitPromotion'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'success', type: 'boolean', example: true),
+                                new OA\Property(property: 'promotionId', type: 'integer', example: 7),
+                                new OA\Property(property: 'confirmationUrl', type: 'string', example: 'https://yoomoney.ru/checkout/payments/v2/contract?orderId=319ed5df-000f-5001-9000-11bb25261e61'),
+                                new OA\Property(property: 'amount', type: 'integer', example: 500),
+                                new OA\Property(property: 'isPaid', type: 'integer', example: 0),
+                            ]
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
