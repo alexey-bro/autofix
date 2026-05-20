@@ -640,7 +640,7 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/submit-promotion',
-        tags: ['Client'],
+        tags: ['Master'],
         summary: 'Отправить отзыв',
         requestBody: new OA\RequestBody(
             ref: '#/components/requestBodies/SubmitPromotion'
@@ -808,7 +808,28 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/update-promotion',
+        tags: ['Master'],
+        summary: 'Обновить отзыв',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/UpdatePromotion'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'success', type: 'boolean', example: true),
+                                new OA\Property(property: 'promotionId', type: 'integer', example: 7),
+                            ]
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -820,6 +841,16 @@ class FunctionsController extends BaseController
     )]
     public function actionUpdatePromotion()
     {
+        //TODO доабвить в сваггер 404
+        /*
+         {
+              "name": "Not Found",
+              "message": "Промоакция или пользователь не найдены",
+              "code": 0,
+              "status": 404,
+              "type": "yii\\web\\NotFoundHttpException"
+         }
+         */
 
         $params = Yii::$app->getRequest()->getBodyParams();
 
@@ -858,7 +889,7 @@ class FunctionsController extends BaseController
                 return [
                     "result" => [
                         "success" => true,
-                        "reviewId" => $Promotion->id,
+                        "promotionId" => $Promotion->id,
                     ]
                 ];
 
@@ -2068,7 +2099,24 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/set-user-photo',
+        tags: ['Common'],
+        summary: 'Загрузить фото пользователя (аватар)',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/UploadPhotoUserRequest'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Профиль пользователя',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            ref: '#/components/schemas/UserResult'
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -2107,8 +2155,34 @@ class FunctionsController extends BaseController
     }
 
     #[OA\Post(
-        path: '/functions/set-promotion-photo',
+        path: '/functions/promotion/{id}/photo',
+        tags: ['Master'],
+        summary: 'Загрузить фото промоакции',
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID промо акции',
+                schema: new OA\Schema(type: 'integer', example: 6)
+            ),
+        ],
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/UploadPhotoPromotionRequest'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            ref: '#/components/schemas/Promotion'
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -2176,8 +2250,34 @@ class FunctionsController extends BaseController
     }
 
     #[OA\Post(
-        path: '/functions/set-service-photo',
+        path: '/functions/service/{id}/photo',
+        tags: ['Master'],
+        summary: 'Загрузить фото услуги',
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'ID услуги',
+                schema: new OA\Schema(type: 'integer', example: 6)
+            ),
+        ],
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/UploadPhotoServiceRequest'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            ref: '#/components/schemas/Service'
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
