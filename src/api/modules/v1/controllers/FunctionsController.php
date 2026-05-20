@@ -2098,7 +2098,7 @@ class FunctionsController extends BaseController
     }
 
     #[OA\Post(
-        path: '/functions/set-user-photo',
+        path: '/functions/user/photo',
         tags: ['Common'],
         summary: 'Загрузить фото пользователя (аватар)',
         requestBody: new OA\RequestBody(
