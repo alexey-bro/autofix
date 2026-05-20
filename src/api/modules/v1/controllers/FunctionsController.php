@@ -908,7 +908,27 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/payment-promotion',
+        tags: ['Master'],
+        summary: 'Получение ссылки на оплату промо',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/promotionId'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'payment', type: 'string', example: 'https://yoomoney.ru/checkout/payments/v2/contract?orderId=319fd2ca-000f-5001-8000-14c802044f36'),
+                            ]
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -1113,7 +1133,27 @@ class FunctionsController extends BaseController
     // TODO: webhook для проверки оплаты и измененя статуса платежа
     #[OA\Post(
         path: '/functions/delete-promotion',
+        tags: ['Master'],
+        summary: 'Удаление промо',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/promotionId'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'success', type: 'boolean', example: true),
+                            ]
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -1162,8 +1202,25 @@ class FunctionsController extends BaseController
 
 
     #[OA\Post(
-        path: '/functions/updatemaster-basic',
+        path: '/functions/update-master-basic',
+        tags: ['Master'],
+        summary: 'Обновление базовых полей',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/UpdateMasterBasic'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Профиль пользователя',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            ref: '#/components/schemas/UserResult'
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -1244,7 +1301,24 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/update-master-rating',
+        tags: ['Master'],
+        summary: 'Поставить оценку мастеру',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/NewRating'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Профиль пользователя',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            ref: '#/components/schemas/UserResult'
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -1302,7 +1376,24 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/update-user-profile',
+        tags: ['Common'],
+        summary: 'Обновление информации о пользователе',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/UpdateUserProfile'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Профиль пользователя',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            ref: '#/components/schemas/UserResult'
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
