@@ -1568,11 +1568,6 @@ class FunctionsController extends BaseController
 
             }
 
-//            if ($photos && is_iterable($photos)) {
-//                $photosString = serialize($photos);
-//                $UserProfile->photos = $photosString;
-//            }
-
             if ($companyName) {
                 $UserProfile->companyName = $companyName;
             }
@@ -1631,14 +1626,39 @@ class FunctionsController extends BaseController
                 "error" => "Пользователь не найден",
             ];
         }
-
-        var_dump('ddd');
-
     }
+
+//{
+//"result": {
+//"success": true,
+//"bookingId": 9
+//}
+//}
 
     #[OA\Post(
         path: '/functions/book-slot',
+        tags: ['Client'],
+        summary: 'Бронирование времени у мастера',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/BookSlot'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'success', type: 'boolean', example: true),
+                                new OA\Property(property: 'bookingId', type: 'integer', example: 34),
+                            ]
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -1825,7 +1845,27 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/cancel-booking',
+        tags: ['Client'],
+        summary: 'Отмена бронирования времени у мастера',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/BookingId'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'success', type: 'boolean', example: true),
+                            ]
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -1870,7 +1910,27 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/update-booking-status',
+        tags: ['Master'],
+        summary: 'Изменение статуса бронирования',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/UpdateBookingStatus'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'success', type: 'boolean', example: true),
+                            ]
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
