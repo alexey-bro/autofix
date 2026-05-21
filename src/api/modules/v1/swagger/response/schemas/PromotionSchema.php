@@ -7,7 +7,7 @@ use OpenApi\Attributes as OA;
 
 #[OA\Schema(
     schema: 'Promotion',
-    description: 'Акция мастера',
+    description: 'Ответ на удаление рабочей смены',
     properties: [
         new OA\Property(property: 'id', type: 'integer', example: 4),
         new OA\Property(property: 'objectId', type: 'integer', example: 4),

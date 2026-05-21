@@ -2014,7 +2014,19 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/delete-worck-shift',
+        tags: ['Master'],
+        summary: 'Удаление рабочей смены',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/shiftDate'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/DeleteWorkShiftResponse'
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -2108,7 +2120,24 @@ class FunctionsController extends BaseController
 
     #[OA\Post(
         path: '/functions/update-master-shedule-and-services',
+        tags: ['Master'],
+        summary: 'Обновление информации о мастере',
+        requestBody: new OA\RequestBody(
+            ref: '#/components/requestBodies/UpdateMasterWorkData'
+        ),
         responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Профиль пользователя',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'result',
+                            ref: '#/components/schemas/UserResult'
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(
                 response: 401,
                 description: 'Ошибка авторизации',
@@ -2553,58 +2582,52 @@ class FunctionsController extends BaseController
         return 'actionCreateYookassaPayment';
     }
 
-    #[OA\Post(
-        path: '/functions/check-and-create-promotion',
-        responses: [
-            new OA\Response(
-                response: 401,
-                description: 'Ошибка авторизации',
-                content: new OA\JsonContent(
-                    ref: '#/components/schemas/UnauthorizedData'
-                )
-            ),
-        ]
-    )]
+//    #[OA\Post(
+//        path: '/functions/check-and-create-promotion',
+//        responses: [
+//            new OA\Response(
+//                response: 401,
+//                description: 'Ошибка авторизации',
+//                content: new OA\JsonContent(
+//                    ref: '#/components/schemas/UnauthorizedData'
+//                )
+//            ),
+//        ]
+//    )]
     public function actionCheckAndCreatePromotion()
     {
         return 'actionCheckAndCreatePromotion';
     }
 
-    #[OA\Post(
-        path: '/functions/yookassa-webhook',
-        responses: [
-            new OA\Response(
-                response: 401,
-                description: 'Ошибка авторизации',
-                content: new OA\JsonContent(
-                    ref: '#/components/schemas/UnauthorizedData'
-                )
-            ),
-        ]
-    )]
+//    #[OA\Post(
+//        path: '/functions/yookassa-webhook',
+//        responses: [
+//            new OA\Response(
+//                response: 401,
+//                description: 'Ошибка авторизации',
+//                content: new OA\JsonContent(
+//                    ref: '#/components/schemas/UnauthorizedData'
+//                )
+//            ),
+//        ]
+//    )]
     public function actionYookassaWebhook()
     {
         return 'actionYookassaWebhook';
     }
 
-
-//    public function actionWorkShifts()
-//    {
-//        return 'actionWorkShifts';
-//    }
-
-    #[OA\Post(
-        path: '/functions/delete-photo',
-        responses: [
-            new OA\Response(
-                response: 401,
-                description: 'Ошибка авторизации',
-                content: new OA\JsonContent(
-                    ref: '#/components/schemas/UnauthorizedData'
-                )
-            ),
-        ]
-    )]
+//    #[OA\Post(
+//        path: '/functions/delete-photo',
+//        responses: [
+//            new OA\Response(
+//                response: 401,
+//                description: 'Ошибка авторизации',
+//                content: new OA\JsonContent(
+//                    ref: '#/components/schemas/UnauthorizedData'
+//                )
+//            ),
+//        ]
+//    )]
     public function actionDeletePhoto()
     {
         return 'actionDeletePhoto';
