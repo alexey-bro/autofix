@@ -15,15 +15,34 @@ return [
     'components' => [
         'request' => [
             'csrfParam' => '_csrf-frontend',
+            'cookieValidationKey' => '',
+            'csrfCookie' => [
+                'domain' => '.test.loc', // <-- Для CSRF токена тоже не помешает
+                'path' => '/',
+                'httpOnly' => true,
+            ],
         ],
         'user' => [
             'identityClass' => 'common\models\User',
             'enableAutoLogin' => true,
-            'identityCookie' => ['name' => '_identity-frontend', 'httpOnly' => true],
+//            'identityCookie' => ['name' => '_identity-frontend', 'httpOnly' => true],
+            'identityCookie' => [
+                'name' => '_identity', // Имя cookie должно совпадать в обоих приложениях
+                'path' => '/',
+                'domain' => '.test.loc', // <-- Тоже указываем домен
+                'httpOnly' => true,
+            ],
+
         ],
         'session' => [
             // this is the name of the session cookie used for login on the frontend
-            'name' => 'advanced-frontend',
+//            'name' => 'advanced-frontend',
+            'name' => 'advanced_dev',
+            'cookieParams' => [
+                'domain' => '.test.loc', // <-- Точка в начале ОЧЕНЬ важна!
+                'path' => '/',
+                'httpOnly' => true,
+            ],
         ],
         'log' => [
             'traceLevel' => YII_DEBUG ? 3 : 0,

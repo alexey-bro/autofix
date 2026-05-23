@@ -24,11 +24,17 @@ return [
         'request' => [
             'csrfParam' => '_csrf-api',
             'enableCsrfValidation' => false,
-//            'cookieValidationKey' => 'sdfsdfsdgfsdgKBkbkKJlhbnjHKBhkjlb687t5^FG^&&',
-            'enableCookieValidation' => false,
             'parsers' => [
                 'application/json' => JsonParser::class,
             ],
+            'cookieValidationKey' => '',
+            'enableCookieValidation' => true,
+            'csrfCookie' => [
+                'domain' => '.test.loc', // <-- Для CSRF токена тоже не помешает
+                'path' => '/',
+                'httpOnly' => true,
+            ],
+
         ],
         'response' => [
             'format' => yii\web\Response::FORMAT_JSON, // По умолчанию отвечаем JSON
@@ -37,15 +43,29 @@ return [
         'user' => [
             'identityClass' => 'common\models\User',
 //            'identityClass' => 'api\modules\v1\models\UserApp',
-            'enableAutoLogin' => false,
-            'identityCookie' => ['name' => '_identity-api', 'httpOnly' => true],
+//            'enableAutoLogin' => false,
+//            'identityCookie' => ['name' => '_identity-api', 'httpOnly' => true],
             'enableSession' => false, // API не использует сессии
 //            'loginUrl' => null, // Не перенаправляем на страницу входа
             'loginUrl' => ['site/login'],
+            'identityCookie' => [
+                'name' => '_identity', // Имя cookie должно совпадать в обоих приложениях
+                'path' => '/',
+                'domain' => '.test.loc', // <-- Тоже указываем домен
+                'httpOnly' => true,
+            ],
+            'enableAutoLogin' => true,
         ],
         'session' => [
             // this is the name of the session cookie used for login on the backend
-            'name' => 'advanced-api',
+//            'name' => 'advanced-api',
+            'name' => 'advanced_dev',
+            'cookieParams' => [
+                'domain' => '.test.loc', // <-- Точка в начале ОЧЕНЬ важна!
+                'path' => '/',
+                'httpOnly' => true,
+            ],
+
         ],
         'log' => [
             'traceLevel' => YII_DEBUG ? 3 : 0,
