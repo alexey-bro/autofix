@@ -7,8 +7,26 @@ services:
       - ./src:/var/www/html
     ports:
       - "80:80"
+
+  autofix_yii2_mailpit:
+    image: axllent/mailpit:latest
+    container_name: autofix_yii2_mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP порт для отправки
+      - "8025:8025"   # Web интерфейс
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    volumes:
+      - mailpit-data:/data
+    networks:
+      - autofix_yii2_network
 #
 #  autofix_yii2_php:
 #    build:
 #      args:
 #        - PHP_XDEBUG=yes   # на локалке включаем xdebug
+
+volumes:
+  mailpit-data:
