@@ -15,6 +15,7 @@ use yii\filters\auth\HttpBearerAuth;
 use yii\rest\Controller;
 use yii\web\BadRequestHttpException;
 use yii\web\UnauthorizedHttpException;
+use OpenApi\Attributes as OA;
 
 class AuthController extends Controller
 {
@@ -36,6 +37,58 @@ class AuthController extends Controller
         return $behaviors;
     }
 
+
+    #[OA\Post(
+        path: '/auth/check-email',
+        tags: ['Auth'],
+        requestBody: new OA\RequestBody(
+            description: 'User email',
+            required: true,
+            ref: '#/components/requestBodies/email'
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: "exists",
+                            type: 'bool',
+                            example: true
+                        ),
+                        new OA\Property(
+                            property: "message",
+                            description: "Сообщение о том, найден пользователь или нет",
+                            type: "string",
+                            example: "Пользователь найден. Выполните вход.",
+                            nullable: false
+                        )
+                    ],
+                    examples: [
+                        new OA\Examples(
+                            example: 'user_found',
+                            summary: 'Пользователь найден',
+                            value: ['exists' => true, 'message' => 'Пользователь найден. Выполните вход.']
+                        ),
+                        new OA\Examples(
+                            example: 'user_not_found',
+                            summary: 'Пользователь не найден',
+                            value: ['exists' => false, 'message' => 'Пользователь не найден. Выполните регистрацию.']
+                        ),
+                    ],
+
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionCheckEmail(): array
     {
         $form = new CheckEmailForm();
@@ -57,6 +110,38 @@ class AuthController extends Controller
 
     }
 
+
+    #[OA\Post(
+        path: '/auth/send-code',
+        tags: ['Auth'],
+        requestBody: new OA\RequestBody(
+            description: 'User email',
+            required: true,
+            ref: '#/components/requestBodies/email'
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: "success",
+                            type: 'bool',
+                            example: true
+                        ),
+                    ],
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionSendCode(): array
     {
         $form = new CheckEmailForm();
@@ -105,6 +190,31 @@ class AuthController extends Controller
 
     }
 
+    #[OA\Post(
+        path: '/auth/verify-code',
+        tags: ['Auth'],
+        requestBody: new OA\RequestBody(
+            description: 'Data for auth user',
+            required: true,
+            ref: '#/components/requestBodies/VerifyCode'
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешная авторизация',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/LoginResponse'
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
     public function actionVerifyCode(): array
     {
 
@@ -155,7 +265,6 @@ class AuthController extends Controller
         $AuthCode->markUsed();
 
         $UserApp = UserApp::findOne(['id' => $User->id]);
-
 
         // Удаляем просроченные токены
         UserToken::deleteExpired($UserApp->id);
