@@ -18,6 +18,11 @@ RUN apt-get update && apt-get install -y \
     libmagickwand-dev \
     imagemagick
 
+# устанавливал для теста
+#    iputils-ping \
+#    telnet \
+
+
 # Очистка кеша
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 

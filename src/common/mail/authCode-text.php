@@ -1,0 +1,1 @@
+<?= "Код входа: {$code}\nДействителен 10 минут.\n" // common/mail/authCode-text.php ?>

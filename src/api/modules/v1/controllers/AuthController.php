@@ -2,8 +2,12 @@
 
 namespace api\modules\v1\controllers;
 
+use api\modules\v1\models\form\CheckEmailForm;
 use api\modules\v1\models\form\RegisterForm;
 use api\modules\v1\models\form\SignupForm;
+use api\modules\v1\models\form\VerifyCodeForm;
+use api\modules\v1\models\UserApp;
+use common\models\AuthCode;
 use common\models\User;
 use common\models\UserToken;
 use Yii;
@@ -21,11 +25,175 @@ class AuthController extends Controller
 
         $behaviors['authenticator'] = [
             'class'  => HttpBearerAuth::class,
-            'except' => ['login', 'register', 'signup'], // эти экшены открытые
+            'except' => [
+                'check-email',
+                'send-code',
+                'verify-code',
+                'resend-code',
+            ], // эти экшены открытые
         ];
 
         return $behaviors;
     }
+
+    public function actionCheckEmail(): array
+    {
+        $form = new CheckEmailForm();
+        $form->load(Yii::$app->request->getBodyParams(), '');
+
+        if (!$form->validate()) {
+            return $this->validationError($form);
+        }
+
+        $User = User::findOne(['email' => $form->email]);
+        $exists = $User !== null;
+
+        return [
+            'exists'  => $exists,
+            'message' => $exists
+                ? 'Пользователь найден. Выполните вход.'
+                : 'Пользователь не найден. Выполните регистрацию.',
+        ];
+
+    }
+
+    public function actionSendCode(): array
+    {
+        $form = new CheckEmailForm();
+        $form->load(Yii::$app->request->getBodyParams(), '');
+
+        if (!$form->validate()) {
+            return $this->validationError($form);
+        }
+
+        // Cooldown: нельзя запрашивать новый код раньше чем через 60 сек
+        $cooldown = AuthCode::getCooldownSeconds($form->email);
+
+        if ($cooldown > 0) {
+            return [
+                'success' => false,
+                'message' => "Повторный запрос кода возможен через {$cooldown} сек.",
+            ];
+
+//            $this->addError('email', "Повторный запрос кода возможен через {$cooldown} сек.");
+//            return null;
+        }
+
+        $User = User::findOne(['email' => $form->email]);
+
+        // Определяем тип: логин или регистрация
+        $typeAuth = $User ? AuthCode::TYPE_LOGIN : AuthCode::TYPE_REGISTER;
+
+        // Генерируем код
+        $authCode = AuthCode::generate($form->email, $typeAuth, $form->ip);
+
+        // Отправляем письмо
+        $view = $typeAuth === AuthCode::TYPE_LOGIN ? 'authCode' : 'verifyCode';
+        Yii::$app->mailer
+            ->compose(
+                ['html' => "{$view}-html", 'text' => "{$view}-text"],
+                ['code' => $authCode->code, 'user' => $User]
+            )
+            ->setFrom('info@findmymechanic.ru')
+            ->setTo($form->email)
+            ->setSubject($typeAuth === AuthCode::TYPE_LOGIN ? 'Код входа' : 'Подтверждение email')
+            ->send();
+
+        return [
+            'success' => true,
+        ];
+
+    }
+
+    public function actionVerifyCode(): array
+    {
+
+        $form = new VerifyCodeForm();
+
+        $params = Yii::$app->request->getBodyParams();
+        $form->load($params, '');
+
+        if (!$form->validate()) {
+            return $this->validationError($form);
+        }
+
+        $User = User::findOne(['email' => $form->email]);
+        // Определяем тип: логин или регистрация
+        $typeAuth = $User ? AuthCode::TYPE_LOGIN : AuthCode::TYPE_REGISTER;
+
+        $AuthCode = AuthCode::findActiveByEmail($form->email);
+
+        if (!$AuthCode) {
+            return [
+                'success' => false,
+                'error' => "Код не найден",
+            ];
+        }
+
+        if ($AuthCode->code !== $form->code) {
+            return [
+                'success' => false,
+                'error' => "Ошибочный код",
+            ];
+        }
+
+        if ($AuthCode->type == AuthCode::TYPE_REGISTER) {
+
+            $User = new User();
+            $User->email  = $form->email;
+            $User->status = User::STATUS_ACTIVE;
+            $User->setPassword(Yii::$app->security->generateRandomString(32));
+            $User->generateAuthKey();
+            $User->role = $form->type_user;
+
+            if ($User->save()) {
+
+            }
+
+        }
+
+        $AuthCode->markUsed();
+
+        $UserApp = UserApp::findOne(['id' => $User->id]);
+
+
+        // Удаляем просроченные токены
+        UserToken::deleteExpired($UserApp->id);
+
+        // Генерируем новый токен
+        $UserToken = UserToken::generate($UserApp->id);
+
+        if ($UserApp && $UserToken) {
+            return [
+                'result' => $UserApp,
+                'auth' => [
+                    'token'      => $UserToken->token,
+                    'expired_at' => $UserToken->expired_at,
+                    'user'       => [
+                        'id'       => $UserApp->id,
+                        'username' => $UserApp->username,
+                        'email'    => $UserApp->email,
+                    ],
+                ],
+            ];
+
+        } else {
+            throw new UnauthorizedHttpException('Ошибка авторизации');
+        }
+
+    }
+
+    public function actionResendCode(): array
+    {
+
+    }
+
+    private function validationError($form): array
+    {
+        Yii::$app->response->statusCode = 422;
+        return ['errors' => $form->errors];
+    }
+
 
     /**
      * POST /auth/register

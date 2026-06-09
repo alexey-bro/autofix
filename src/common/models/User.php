@@ -82,10 +82,28 @@ class User extends ActiveRecord implements IdentityInterface
     public function rules()
     {
         return [
+            [['email'], 'required'],
+            ['email', 'unique', 'targetClass' => User::class, 'message' => 'Этот адрес электронной почты уже занят'],
+            [['username', 'email'], 'trim'],
             ['status', 'default', 'value' => self::STATUS_INACTIVE],
             ['status', 'in', 'range' => [self::STATUS_ACTIVE, self::STATUS_INACTIVE, self::STATUS_DELETED]],
+            ['role', 'in', 'range' => function() {
+                return array_keys(User::listRoles());
+            }],
             [['role'], 'integer'],
         ];
+    }
+
+    public function beforeValidate()
+    {
+        if (parent::beforeValidate()) {
+            // Custom logic: e.g., format a date or normalize a string
+            if (!$this->username) {
+                $this->username = 'user_' . time();
+            }
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -121,6 +139,23 @@ class User extends ActiveRecord implements IdentityInterface
         // $userToken->refresh();
 
         return static::findOne(['id' => $userToken->user_id, 'status' => self::STATUS_ACTIVE]);
+    }
+
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+
+        if ($insert) {
+            // Код только при создании нового пользователя
+
+//            Yii::info("Создан новый пользователь: {$this->id}");
+            $UserProfile = new UserProfile();
+            $UserProfile->user_id = $this->id;
+            $UserProfile->save();
+
+            // Например: отправка письма, создание профиля, логирование
+            // Profile::create(['user_id' => $this->id]);
+        }
     }
 
     /**

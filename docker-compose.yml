@@ -27,16 +27,21 @@ services:
       - .env
     volumes:
       - ./src:/var/www/html
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - DB_HOST=autofix_yii2_db
       - DB_PORT=3306
       - DB_DATABASE=autofix
       - DB_USERNAME=autofix_user
       - DB_PASSWORD=autofix_password
+      - MAIL_HOST=host.docker.internal
+      - MAIL_PORT=25
     depends_on:
       - autofix_yii2_db
     networks:
       - autofix_yii2_network
+#    network_mode: host
 #    deploy:
 #      resources:
 #        limits:
