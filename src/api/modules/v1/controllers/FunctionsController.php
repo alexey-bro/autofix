@@ -112,7 +112,7 @@ class FunctionsController extends BaseController
 
     //Например: PATCH /api/fcm_token_for_user/<id>/
     #[OA\Post(
-        path: '/auth/fcm-token',
+        path: '/function/fcm-token',
         tags: ['Common'],
         requestBody: new OA\RequestBody(
             description: 'Fcm Token',
