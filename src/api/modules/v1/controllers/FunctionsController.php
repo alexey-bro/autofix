@@ -108,6 +108,79 @@ class FunctionsController extends BaseController
         return $behaviors;
     }
 
+//"fcm_token": "6a4#@5gdsg&^%…"
+
+    //Например: PATCH /api/fcm_token_for_user/<id>/
+    #[OA\Post(
+        path: '/auth/fcm-token',
+        tags: ['Common'],
+        requestBody: new OA\RequestBody(
+            description: 'Fcm Token',
+            required: true,
+            ref: '#/components/requestBodies/fcmToken'
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Успешный ответ',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: "success",
+                            type: 'bool',
+                            example: true
+                        ),
+                    ],
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Ошибка авторизации',
+                content: new OA\JsonContent(
+                    ref: '#/components/schemas/UnauthorizedData'
+                )
+            ),
+        ]
+    )]
+    public function actionFcmToken(): array
+    {
+        $User = Yii::$app->user->identity;
+
+        $params = Yii::$app->request->getBodyParams();
+        $fcmToken = $params['fcm_token'] ?? null;
+
+        $headers = Yii::$app->request->headers;
+
+        // Получаем заголовок Authorization
+        $authHeader = $headers->get('Authorization');
+
+        // Извлекаем сам токен (формат: "Bearer qwe123asd456")
+        $bearerToken = null;
+        if ($authHeader && preg_match('/^Bearer\s+(.*?)$/', $authHeader, $matches)) {
+            $bearerToken = $matches[1];
+        }
+
+        if ($User && $bearerToken && $fcmToken) {
+
+            $UserToken = UserToken::findOne(['user_id' => $User->id, 'token' => $bearerToken]);
+            if ($UserToken) {
+                $UserToken->device_token = $fcmToken;
+
+                if ($UserToken->save()) {
+                    return [
+                        'success' => true,
+                    ];
+                }
+
+                $UserToken->save();
+            }
+        }
+
+        return [
+            'success' => false,
+        ];
+    }
+
 
     #[OA\Post(
         path: '/functions/login-by-phone',

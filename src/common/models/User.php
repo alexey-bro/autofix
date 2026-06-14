@@ -367,6 +367,11 @@ class User extends ActiveRecord implements IdentityInterface
         return $this->hasMany(CustomShiftTemplates::class, ['user_id' => 'id']);
     }
 
+    public function getUserToken()
+    {
+        return $this->hasMany(UserToken::class, ['user_id' => 'id']);
+    }
+
     /**
      * Основная связь: пользователь имеет много категорий через промежуточную таблицу
      */

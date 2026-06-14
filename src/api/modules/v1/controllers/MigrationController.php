@@ -67,7 +67,8 @@ class MigrationController extends ActiveController
             $User->generateAuthKey();
             $User->generateEmailVerificationToken();
 
-            if (!$User->save()) {
+            //false  из-за того, что мыло есть не у всех
+            if (!$User->save(false)) {
                 var_dump($User->getErrors());
                 die();
             }

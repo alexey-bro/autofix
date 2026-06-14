@@ -111,7 +111,7 @@ class ApiController extends Controller
             'swagger-app' => [
                 'class' => SwaggerAction::class,
                 'restUrl' => [
-                    ['name' => 'App.api', 'url' => Url::to(['/v1/api/app'], 'https')],
+                    ['name' => 'App.api', 'url' => Url::to(['/v1/api/app'], 'http')],
                 ],
                 'configurations' => ['persistAuthorization' => true, 'sorter' => 'alpha']
             ],
