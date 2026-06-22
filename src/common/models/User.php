@@ -83,7 +83,15 @@ class User extends ActiveRecord implements IdentityInterface
     {
         return [
             [['email'], 'required'],
-            ['email', 'unique', 'targetClass' => User::class, 'message' => 'Этот адрес электронной почты уже занят'],
+            ['email', 'unique',
+                'targetClass' => User::class,
+                'message' => 'Этот адрес электронной почты уже занят',
+                'filter' => function ($query) {
+                    if (!$this->isNewRecord) {
+                        $query->andWhere(['<>', 'id', $this->id]);
+                    }
+                }
+            ],
             [['username', 'email'], 'trim'],
             ['status', 'default', 'value' => self::STATUS_INACTIVE],
             ['status', 'in', 'range' => [self::STATUS_ACTIVE, self::STATUS_INACTIVE, self::STATUS_DELETED]],
