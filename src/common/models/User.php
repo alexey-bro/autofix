@@ -82,7 +82,7 @@ class User extends ActiveRecord implements IdentityInterface
     public function rules()
     {
         return [
-            [['email'], 'required'],
+            [['email'], 'required', 'message' => 'Поле email обязательно для заполнения'],
             ['email', 'unique',
                 'targetClass' => User::class,
                 'message' => 'Этот адрес электронной почты уже занят',
