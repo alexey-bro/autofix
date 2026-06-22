@@ -1689,7 +1689,20 @@ class FunctionsController extends BaseController
 
             if ($User->save() && $UserProfile->save()) {
                 return [
+                    'success' => true,
                     "result" => $User,
+                ];
+            } else {
+                $errors = [];
+                $modelErrors = array_merge($UserProfile->getErrors(), $User->getErrors());
+
+                foreach ($modelErrors as $attribute => $messages) {
+                    $errors[$attribute] = $messages[0]; // Только первая ошибка
+                }
+
+                return [
+                    'success' => false,
+                    'errors' => $errors,
                 ];
             }
 
