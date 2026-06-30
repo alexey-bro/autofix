@@ -156,10 +156,12 @@ class User extends ActiveRecord implements IdentityInterface
         if ($insert) {
             // Код только при создании нового пользователя
 
+            //Теперь будет несколько userProfile, если нет ни одного, то приложение должно работать и без него
+
 //            Yii::info("Создан новый пользователь: {$this->id}");
-            $UserProfile = new UserProfile();
-            $UserProfile->user_id = $this->id;
-            $UserProfile->save();
+//            $UserProfile = new UserProfile();
+//            $UserProfile->user_id = $this->id;
+//            $UserProfile->save();
 
             // Например: отправка письма, создание профиля, логирование
             // Profile::create(['user_id' => $this->id]);
