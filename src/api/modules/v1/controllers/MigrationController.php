@@ -73,12 +73,15 @@ class MigrationController extends ActiveController
                 die();
             }
 
-            $UserProfile = new UserProfile();
+            $UserProfile = $User->userProfile;
 
+            if (!$UserProfile) {
+                $UserProfile = new UserProfile();
+                $UserProfile->user_id = $User->id;
+            }
 
 //            $UserProfile->fullName = $data;
             $UserProfile->_user_id = $data->userId;
-            $UserProfile->user_id = $User->id;
             $UserProfile->carBrand = $data->carBrand ?? null;
             $UserProfile->city = $data->city ?? null;
             $UserProfile->rating = $data->rating ?? null;
