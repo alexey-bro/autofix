@@ -11,7 +11,7 @@ services:
   autofix_yii2_mailpit:
     image: axllent/mailpit:latest
     container_name: autofix_yii2_mailpit
-    restart: unless-stopped
+#    restart: unless-stopped
     ports:
       - "1025:1025"   # SMTP порт для отправки
       - "8025:8025"   # Web интерфейс
