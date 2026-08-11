@@ -87,7 +87,7 @@ cert-renew:
 		-v $(PWD)/$(WEBROOT_PATH):/var/www/certbot \
 		certbot/certbot renew --quiet
 	@echo "🔁 Перезапускаем Nginx..."
-	docker compose restart nginx
+	docker compose restart autofix_yii2_nginx
 	@echo "✅ Сертификат обновлён!"
 
 # Проверка сертификатов
