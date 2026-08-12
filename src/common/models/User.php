@@ -99,6 +99,7 @@ class User extends ActiveRecord implements IdentityInterface
                 return array_keys(User::listRoles());
             }],
             [['role'], 'integer'],
+            ['role', 'default', 'value' => self::ROLE_USER_CLIENT],
         ];
     }
 

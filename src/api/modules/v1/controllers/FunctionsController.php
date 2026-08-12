@@ -20,6 +20,7 @@ use common\models\Review;
 use common\models\Services;
 use common\models\Specialization;
 use common\models\Specializations;
+use common\models\User;
 use common\models\UserProfile;
 use common\models\UserToken;
 use common\models\WorkDaysShift;
@@ -266,7 +267,9 @@ class FunctionsController extends BaseController
     )]
     public function actionGetAllUsers()
     {
-        $allUsers = UserApp::find()->all();
+        $allUsers = UserApp::find()
+            ->andWhere(['role' => array_keys(User::listRoles())])
+            ->all();
 
         return [
             'result' => $allUsers,
