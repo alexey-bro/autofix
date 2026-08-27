@@ -12,7 +12,7 @@ use yii\db\ActiveRecord;
  * @property string    $token
  * @property string    $device_id
  * @property string    $device_token
- * @property int    $device_type
+ * @property int       $device_type
  * @property string    $expired_at
  * @property string    $created_at
  * @property string    $updated_at

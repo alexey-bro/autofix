@@ -1597,19 +1597,36 @@ class FunctionsController extends BaseController
             if ($workShifts) {
 
                 $UserWorkShiftDays = WorkDaysShift::find()->where(['user_id' => $User->id])->all();
-                $UserWorkShiftTimes = [];
 
-                foreach ($UserWorkShiftDays as $UserWorkShiftDay) {
+                $UserWorkShiftTimes = WorkTimeShift::find()
+                    ->select([
+                        'day',
+                        'start',
+                        'stop',
+                    ])
+                    ->leftJoin('work_days_shift', 'work_days_shift.id = work_time_shift.work_days_shift_id')
+                    ->where(['user_id' => $User->id])
+                    ->asArray()
+                    ->all();
 
-                    $workTimeShifts = $UserWorkShiftDay->workTimeShift;
+                $groupedDays = [];
+                foreach ($UserWorkShiftTimes as $item) {
+                    $day = $item['day'];
 
-                    foreach ($workTimeShifts as $workTimeShift) {
-                        $workTimeShift->delete();
+                    unset($item['day']);
+
+                    if (!isset($groupedDays[$day])) {
+                        $groupedDays[$day] = [];
                     }
 
-                    $UserWorkShiftDay->delete();
+                    $groupedDays[$day][] = $item;
                 }
 
+//              Та же группировка, но в другом стиле
+//                $grouped = array_reduce($UserWorkShiftTimes, function($carry, $item) {
+//                    $carry[$item['day']][] = $item;
+//                    return $carry;
+//                }, []);
 
                 foreach ($workShifts as $workShift) {
 
@@ -1617,26 +1634,52 @@ class FunctionsController extends BaseController
 
                     if (isset($workShift['slots'])) {
 
-                        $WorkDaysShift = new WorkDaysShift();
-                        $WorkDaysShift->user_id = $User->id;
-                        $WorkDaysShift->day = $DTWorkShift->format('Y-m-d');
+                        $day = $DTWorkShift->format('Y-m-d');
+
+                        $WorkDaysShift = null;
+
+                        if (isset($groupedDays[$day])) {
+                            $WorkDaysShift = WorkDaysShift::find()->where([
+                                'user_id' => $User->id,
+                                'day' => $day
+                            ])->one();
+                        }
+
+                        if (!$WorkDaysShift) {
+                            $WorkDaysShift = new WorkDaysShift();
+                            $WorkDaysShift->user_id = $User->id;
+                            $WorkDaysShift->day = $DTWorkShift->format('Y-m-d');
+                        }
 
                         if ($WorkDaysShift->save()) {
                             foreach ($workShift['slots'] as $slot) {
 
-                                $DTWorkShiftTimeStart = new DateTime($slot['startTime']);
-                                $DTWorkShiftTimeEnd = new DateTime($slot['endTime']);
+                                $start = (new DateTime($slot['startTime']))->format('H:i:s');
+                                $stop = (new DateTime($slot['endTime']))->format('H:i:s');
+
+                                if ($groupedDays[$day]) {
+                                    $found = false;
+                                    foreach ($groupedDays[$day] as $shift) {
+                                        if ($shift['start'] === $start && $shift['stop'] === $stop) {
+                                            $found = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if ($found) {
+                                        continue;
+                                    }
+                                }
 
                                 $WorkTimeShift = new WorkTimeShift();
                                 $WorkTimeShift->work_days_shift_id = $WorkDaysShift->id;
-                                $WorkTimeShift->start = $DTWorkShiftTimeStart->format('H:i:s');
-                                $WorkTimeShift->stop = $DTWorkShiftTimeEnd->format('H:i:s');
+                                $WorkTimeShift->start = $start;
+                                $WorkTimeShift->stop = $stop;
                                 $WorkTimeShift->isAvailable = (int) $slot['isAvailable'];
                                 $WorkTimeShift->save();
 
                             }
                         }
-
 
                     }
 
