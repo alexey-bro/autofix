@@ -444,16 +444,17 @@ class FunctionsController extends BaseController
     public function actionGetMasterBookings()
     {
         $params = Yii::$app->getRequest()->getBodyParams();
-        $masterId = $params['masterId'] ?? null;
+
+        $Master = UserApp::findOne(Yii::$app->user->id);
 
         // TODO::booking->status поправить в миграции, он там вообще не учитывается
 
         $response = [];
 
-        if ($masterId && ($Master = UserProfileApp::findOne(['id' => $masterId]))) {
+        if ($Master && ($Master = UserProfileApp::findOne(['id' => $Master->id]))) {
 
             $listBooking = BookingApp::find()
-                ->where(['master_id' => $masterId])
+                ->where(['master_id' => $Master->id])
                 ->all();
 
 
@@ -1657,7 +1658,7 @@ class FunctionsController extends BaseController
                                 $start = (new DateTime($slot['startTime']))->format('H:i:s');
                                 $stop = (new DateTime($slot['endTime']))->format('H:i:s');
 
-                                if ($groupedDays[$day]) {
+                                if (isset($groupedDays[$day])) {
                                     $found = false;
                                     foreach ($groupedDays[$day] as $shift) {
                                         if ($shift['start'] === $start && $shift['stop'] === $stop) {
