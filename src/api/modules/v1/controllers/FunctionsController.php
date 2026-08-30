@@ -764,6 +764,8 @@ class FunctionsController extends BaseController
         $conditions = $params['conditions'] ?? null;
 
         $amount = $params['amount'] ?? null;
+        //Цена пока фиксированная для всех
+        $amount = 10;
 
         $durationDays = $params['durationDays'] ?? Promotion::DEFAULT_DURATION_DAYS;
 
