@@ -2,20 +2,134 @@
 namespace api\modules\v1\controllers;
 
 use common\jobs\DownloadJob;
+use common\models\File;
 use common\models\Services;
 use common\models\User;
 use common\models\UserProfile;
 use common\models\WorkDaysShift;
 use common\models\WorkTimeShift;
 use DateTime;
+use Exception;
 use Yii;
 use yii\rest\ActiveController;
+use yii\web\UploadedFile;
 
 class MigrationController extends ActiveController
 {
     public $modelClass = 'common\models\User';
 //    public $modelClass = 'common\models\Booking';
 
+
+    /**
+     * Экспорт фотографий мастеров из старой базы в новую
+     *
+     * @return int
+     */
+    public function actionImportPhoto()
+    {
+        $pathBack4Db = Yii::getAlias('@console') . '/back4app_db';
+
+        $dataUserProfile = json_decode(file_get_contents($pathBack4Db . '/UserProfile.json'));
+        $dataUserProfile = $dataUserProfile->results;
+
+        $i = 0;
+        $j = 0;
+        foreach ($dataUserProfile as $data) {
+
+            if (isset($data->photoUrl) && isset($data->userId)) {
+
+                $j++;
+
+                $UserId = UserProfile::find()
+                    ->select('user_id')
+                    ->where(['_user_id' => $data->userId])->scalar();
+
+                $errors = [];
+
+                try {
+
+                    // Создаем UploadedFile из ссылки
+                    $photo = self::createUploadedFileFromUrl($data->photoUrl);
+
+                    // Ваш оригинальный код без изменений
+                    $File = new File();
+                    $File->loadFile($photo);
+                    $File->setType(File::TYPE_AVATAR);
+                    $File->setSubType(File::SUB_TYPE_AVATAR);
+                    $File->setUserId($UserId);
+                    $File->setEntityId($UserId);
+                    $r = $File->saveFile();
+
+                    if ($r) {
+                        $i++;
+                    }
+
+
+                } catch (Exception $e) {
+                    $errors[$UserId] = "Ошибка загрузки файла: " . $e->getMessage();
+                }
+
+            }
+
+        }
+
+
+        if ($i == $j) {
+            echo 'All Done';
+        }
+        var_dump($i);
+        var_dump($j);
+
+
+    }
+
+
+    public static function createUploadedFileFromUrl($photoUrl) {
+        // Создаем временный файл
+        $tempFile = tempnam(sys_get_temp_dir(), 'photo_');
+
+        // Скачиваем файл по ссылке
+        $ch = curl_init($photoUrl);
+        $fp = fopen($tempFile, 'wb');
+        curl_setopt($ch, CURLOPT_FILE, $fp);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_exec($ch);
+        curl_close($ch);
+        fclose($fp);
+
+        // Проверяем, что файл успешно скачан
+        if (file_exists($tempFile) && filesize($tempFile) > 0) {
+            // Получаем имя файла из URL
+            $fileName = basename(parse_url($photoUrl, PHP_URL_PATH));
+            if (empty($fileName)) {
+                $fileName = 'photo_' . time() . '.jpg';
+            }
+
+            // Определяем MIME-тип
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_file($finfo, $tempFile);
+            finfo_close($finfo);
+
+            // Создаем объект UploadedFile
+            $UploadedFile = new UploadedFile([
+                'name' => $fileName,
+                'tempName' => $tempFile,
+                'type' => $mimeType,
+                'size' => filesize($tempFile),
+                'error' => UPLOAD_ERR_OK,
+            ]);
+
+            return $UploadedFile;
+
+        } else {
+            // Обработка ошибки скачивания
+            return [
+                "error" => "Не удалось скачать файл по указанной ссылке",
+            ];
+        }
+    }
 
     public function actionTest()
     {
