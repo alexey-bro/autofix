@@ -8,8 +8,14 @@ use api\modules\v1\models\form\SignupForm;
 use api\modules\v1\models\form\VerifyCodeForm;
 use api\modules\v1\models\UserApp;
 use common\models\AuthCode;
+use common\models\CustomShiftTemplates;
+use common\models\Services;
+use common\models\Specialization;
+use common\models\Specializations;
 use common\models\User;
 use common\models\UserToken;
+use common\models\WorkDaysShift;
+use common\models\WorkTimeShift;
 use Yii;
 use yii\filters\auth\HttpBearerAuth;
 use yii\rest\Controller;
@@ -227,6 +233,19 @@ class AuthController extends Controller
             return $this->validationError($form);
         }
 
+        $firstName = $params['firstName'] ?? null;
+        $lastName = $params['lastName'] ?? null;
+        $city = $params['city'] ?? null;
+        $specialization = $params['specialization'] ?? null;
+        $services = $params['services'] ?? null;
+        $cars = $params['cars'] ?? null;
+        $workShifts = $params['workShifts'] ?? null;
+        $companyName = $params['companyName'] ?? null;
+        $experience = $params['experience'] ?? null;
+        $phone = $params['phone'] ?? null;
+        $workAddress = $params['workAddress'] ?? null;
+        $carBrand = $params['carBrand'] ?? null;
+
         $User = User::findOne(['email' => $form->email]);
         // Определяем тип: логин или регистрация
         $typeAuth = $User ? AuthCode::TYPE_LOGIN : AuthCode::TYPE_REGISTER;
@@ -257,6 +276,200 @@ class AuthController extends Controller
             $User->role = $form->type_user;
 
             if ($User->save()) {
+                $UserProfile = $User->userProfile;
+
+                if ($firstName) {
+                    $UserProfile->firstName = $firstName;
+                }
+
+                if ($lastName) {
+                    $UserProfile->lastName = $lastName;
+                }
+
+                if ($city) {
+                    $UserProfile->city = $city;
+                }
+
+                if ($specialization) {
+                    //TODO: вынести сохранение специализации в отдельное место
+
+                    //Удаляем старые специализации
+                    $listSpecializationUserProfile = Specialization::find()
+                        ->where(['user_id' => $User->id])
+                        ->all();
+
+                    foreach ($listSpecializationUserProfile as $specializationUserProfile) {
+                        $specializationUserProfile->delete();
+                    }
+
+
+                    $specialization = explode(',', $specialization ?? null);
+
+                    foreach ($specialization as $spec) {
+                        $spec = trim($spec);
+
+                        if ($specObject = Specializations::findOne(['name' => $spec])) {
+
+                            $Specialization = new Specialization();
+                            $Specialization->specialization_id = $specObject->id;
+                            $Specialization->user_id = $User->id;
+                            $Specialization->save();
+
+                        }
+
+                    }
+
+                }
+
+                if ($services) {
+
+                    $listServices = Services::find()
+                        ->where(['user_id' => $User->id])
+                        ->all();
+
+                    foreach ($listServices as $Service) {
+                        $Service->delete();
+                    }
+
+                    foreach ($services as $service) {
+
+                        if ($Specialization = Specializations::findOne(['name' => $service['category']])) {
+
+                            $Service = new Services();
+                            $Service->user_id = $User->id;
+                            $Service->specialization_id = $Specialization->id;
+                            $Service->name = $service['name'];
+                            $Service->description = $service['description'];
+                            $Service->price_from = $service['priceFrom'];
+                            $Service->price_to = $service['priceTo'] ?? null;
+                            $Service->save();
+
+                        }
+                    }
+
+                }
+
+                if ($cars && is_iterable($cars)) {
+                    $carsString = serialize($cars);
+                    $UserProfile->cars = $carsString;
+                }
+
+                if ($carBrand) {
+                    $UserProfile->carBrand = $carBrand;
+                }
+
+                if ($workShifts) {
+
+                    $UserWorkShiftDays = WorkDaysShift::find()->where(['user_id' => $User->id])->all();
+
+                    $UserWorkShiftTimes = WorkTimeShift::find()
+                        ->select([
+                            'day',
+                            'start',
+                            'stop',
+                        ])
+                        ->leftJoin('work_days_shift', 'work_days_shift.id = work_time_shift.work_days_shift_id')
+                        ->where(['user_id' => $User->id])
+                        ->asArray()
+                        ->all();
+
+                    $groupedDays = [];
+                    foreach ($UserWorkShiftTimes as $item) {
+                        $day = $item['day'];
+
+                        unset($item['day']);
+
+                        if (!isset($groupedDays[$day])) {
+                            $groupedDays[$day] = [];
+                        }
+
+                        $groupedDays[$day][] = $item;
+                    }
+
+//              Та же группировка, но в другом стиле
+//                $grouped = array_reduce($UserWorkShiftTimes, function($carry, $item) {
+//                    $carry[$item['day']][] = $item;
+//                    return $carry;
+//                }, []);
+
+                    foreach ($workShifts as $workShift) {
+
+                        $DTWorkShift = new DateTime($workShift['date']);
+
+                        if (isset($workShift['slots'])) {
+
+                            $day = $DTWorkShift->format('Y-m-d');
+
+                            $WorkDaysShift = null;
+
+                            if (isset($groupedDays[$day])) {
+                                $WorkDaysShift = WorkDaysShift::find()->where([
+                                    'user_id' => $User->id,
+                                    'day' => $day
+                                ])->one();
+                            }
+
+                            if (!$WorkDaysShift) {
+                                $WorkDaysShift = new WorkDaysShift();
+                                $WorkDaysShift->user_id = $User->id;
+                                $WorkDaysShift->day = $DTWorkShift->format('Y-m-d');
+                            }
+
+                            if ($WorkDaysShift->save()) {
+                                foreach ($workShift['slots'] as $slot) {
+
+                                    $start = (new DateTime($slot['startTime']))->format('H:i:s');
+                                    $stop = (new DateTime($slot['endTime']))->format('H:i:s');
+
+                                    if (isset($groupedDays[$day])) {
+                                        $found = false;
+                                        foreach ($groupedDays[$day] as $shift) {
+                                            if ($shift['start'] === $start && $shift['stop'] === $stop) {
+                                                $found = true;
+                                                break;
+                                            }
+                                        }
+
+                                        if ($found) {
+                                            continue;
+                                        }
+                                    }
+
+                                    $WorkTimeShift = new WorkTimeShift();
+                                    $WorkTimeShift->work_days_shift_id = $WorkDaysShift->id;
+                                    $WorkTimeShift->start = $start;
+                                    $WorkTimeShift->stop = $stop;
+                                    $WorkTimeShift->isAvailable = (int) $slot['isAvailable'];
+                                    $WorkTimeShift->save();
+
+                                }
+                            }
+
+                        }
+
+                    }
+
+                }
+
+                if ($companyName) {
+                    $UserProfile->companyName = $companyName;
+                }
+
+                if ($experience) {
+                    $UserProfile->experience = (integer) $experience;
+                }
+
+                //TODO: phone должен меняться с подтверждением и проверкой на уникальность
+                if ($phone) {
+                    $User->phone = $phone;
+                }
+
+                if ($workAddress) {
+                    $UserProfile->workAddress = $workAddress;
+                }
+
+                $User->save();
+                $UserProfile->save();
 
             }
 
