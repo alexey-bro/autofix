@@ -245,6 +245,8 @@ class AuthController extends Controller
         $phone = $params['phone'] ?? null;
         $workAddress = $params['workAddress'] ?? null;
         $carBrand = $params['carBrand'] ?? null;
+        $latitude = $params['latitude'] ?? null;
+        $longitude = $params['longitude'] ?? null;
 
         $User = User::findOne(['email' => $form->email]);
         // Определяем тип: логин или регистрация
@@ -284,6 +286,14 @@ class AuthController extends Controller
 
                 if ($lastName) {
                     $UserProfile->lastName = $lastName;
+                }
+
+                if ($latitude) {
+                    $UserProfile->latitude = $latitude;
+                }
+
+                if ($longitude) {
+                    $UserProfile->longitude = $longitude;
                 }
 
                 if ($city) {
