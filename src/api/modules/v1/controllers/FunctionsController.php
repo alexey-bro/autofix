@@ -1506,9 +1506,8 @@ class FunctionsController extends BaseController
         $customShiftTemplates = $params['customShiftTemplates'] ?? null;
         $workAddress = $params['workAddress'] ?? null;
         $carBrand = $params['carBrand'] ?? null;
-
-
-
+        $latitude = $params['latitude'] ?? null;
+        $longitude = $params['longitude'] ?? null;
 
         if ($User && $UserProfile) {
 
@@ -1518,6 +1517,14 @@ class FunctionsController extends BaseController
 
             if ($lastName) {
                 $UserProfile->lastName = $lastName;
+            }
+
+            if ($latitude) {
+                $UserProfile->latitude = $latitude;
+            }
+
+            if ($longitude) {
+                $UserProfile->longitude = $longitude;
             }
 
             if ($city) {
