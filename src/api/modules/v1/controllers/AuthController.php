@@ -16,6 +16,7 @@ use common\models\User;
 use common\models\UserToken;
 use common\models\WorkDaysShift;
 use common\models\WorkTimeShift;
+use DateTime;
 use Yii;
 use yii\filters\auth\HttpBearerAuth;
 use yii\rest\Controller;
@@ -270,14 +271,23 @@ class AuthController extends Controller
 
         if ($AuthCode->type == AuthCode::TYPE_REGISTER) {
 
-            $User = new User();
-            $User->email  = $form->email;
-            $User->status = User::STATUS_ACTIVE;
-            $User->setPassword(Yii::$app->security->generateRandomString(32));
-            $User->generateAuthKey();
-            $User->role = $form->type_user;
+            $transaction = Yii::$app->db->beginTransaction();
 
-            if ($User->save()) {
+            try {
+
+                $User = new User();
+                $User->email = $form->email;
+                $User->status = User::STATUS_ACTIVE;
+                $User->setPassword(Yii::$app->security->generateRandomString(32));
+                $User->generateAuthKey();
+                $User->role = $form->type_user;
+
+                if (!$User->save()) {
+                    throw new \yii\base\Exception(
+                        'Ошибка сохранения пользователя: ' . json_encode($User->getErrors(), JSON_UNESCAPED_UNICODE)
+                    );
+                }
+
                 $UserProfile = $User->userProfile;
 
                 if ($firstName) {
@@ -289,11 +299,11 @@ class AuthController extends Controller
                 }
 
                 if ($latitude) {
-                    $UserProfile->latitude = $latitude;
+                    $UserProfile->latitude = (string)$latitude;
                 }
 
                 if ($longitude) {
-                    $UserProfile->longitude = $longitude;
+                    $UserProfile->longitude = (string)$longitude;
                 }
 
                 if ($city) {
@@ -449,7 +459,7 @@ class AuthController extends Controller
                                     $WorkTimeShift->work_days_shift_id = $WorkDaysShift->id;
                                     $WorkTimeShift->start = $start;
                                     $WorkTimeShift->stop = $stop;
-                                    $WorkTimeShift->isAvailable = (int) $slot['isAvailable'];
+                                    $WorkTimeShift->isAvailable = (int)$slot['isAvailable'];
                                     $WorkTimeShift->save();
 
                                 }
@@ -466,7 +476,7 @@ class AuthController extends Controller
                 }
 
                 if ($experience) {
-                    $UserProfile->experience = (integer) $experience;
+                    $UserProfile->experience = (integer)$experience;
                 }
 
                 //TODO: phone должен меняться с подтверждением и проверкой на уникальность
@@ -478,11 +488,28 @@ class AuthController extends Controller
                     $UserProfile->workAddress = $workAddress;
                 }
 
-                $User->save();
-                $UserProfile->save();
+                if (!$User->save()) {
+                    throw new \yii\base\Exception(
+                        'Ошибка сохранения пользователя: ' . json_encode($User->getErrors(), JSON_UNESCAPED_UNICODE)
+                    );
+                }
 
+                if (!$UserProfile->save()) {
+                    throw new \yii\base\Exception(
+                        'Ошибка сохранения профиля: ' . json_encode($UserProfile->getErrors(), JSON_UNESCAPED_UNICODE)
+                    );
+                }
+
+                $transaction->commit();
+
+            } catch (\Throwable $e) {
+                $transaction->rollBack();
+
+                return [
+                    'success' => false,
+                    'error' => $e->getMessage(),
+                ];
             }
-
         }
 
         $AuthCode->markUsed();

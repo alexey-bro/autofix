@@ -1520,11 +1520,11 @@ class FunctionsController extends BaseController
             }
 
             if ($latitude) {
-                $UserProfile->latitude = $latitude;
+                $UserProfile->latitude = (string) $latitude;
             }
 
             if ($longitude) {
-                $UserProfile->longitude = $longitude;
+                $UserProfile->longitude = (string) $longitude;
             }
 
             if ($city) {
@@ -1761,6 +1761,38 @@ class FunctionsController extends BaseController
                     'errors' => $errors,
                 ];
             }
+
+//            $transaction = Yii::$app->db->beginTransaction();
+//            try {
+//                if ($User->save() && $UserProfile->save()) {
+//                    $transaction->commit();
+//                    return [
+//                        'success' => true,
+//                        "result" => $User,
+//                    ];
+//                } else {
+//                    $transaction->rollBack();
+//
+//                    $errors = [];
+//                    $modelErrors = array_merge($UserProfile->getErrors(), $User->getErrors());
+//
+//                    foreach ($modelErrors as $attribute => $messages) {
+//                        $errors[$attribute] = $messages[0]; // берем первую ошибку
+//                    }
+//
+//                    return [
+//                        'success' => false,
+//                        'errors' => $errors,
+//                    ];
+//                }
+//            } catch (\Exception $e) {
+//                $transaction->rollBack();
+//
+//                return [
+//                    'success' => false,
+//                    'errors' => ['exception' => $e->getMessage()],
+//                ];
+//            }
 
         } else {
             return [

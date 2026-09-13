@@ -139,8 +139,8 @@ class UserApp extends User
                 $fields['experience'] = fn() => $this->userProfileApp?->experience;
                 $fields['firstName'] = fn() => $this->userProfileApp?->firstName;
                 $fields['lastName'] = fn() => $this->userProfileApp?->lastName;
-                $fields['latitude'] = fn() => $this->userProfileApp?->latitude;
-                $fields['longitude'] = fn() => $this->userProfileApp?->longitude;
+                $fields['latitude'] = fn() => (float) $this->userProfileApp?->latitude;
+                $fields['longitude'] = fn() => (float) $this->userProfileApp?->longitude;
                 $fields['workAddress'] = fn() => $this->userProfileApp?->workAddress;
                 $fields['rating'] = fn() => $this->userProfileApp?->rating;
                 $fields['reviewsCount'] = fn() => $this->userProfileApp?->reviewsCount;
